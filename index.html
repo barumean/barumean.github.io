@@ -554,7 +554,7 @@
           </div>
         </li>
       </ul>
-      <a class="map-btn" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener">
+      <a class="map-btn" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener noreferrer">
         🗺️ 네이버 지도로 보기
       </a>
     </div>
@@ -569,7 +569,7 @@
           위 코드를 아래 placeholder 대신 넣어 주세요.
         -->
         <div class="slide">
-          <img src="1.jpg" alt="현우 사진"
+          <img src="photos/1.jpg" alt="현우 사진"
                onerror="this.parentElement.innerHTML='<div class=\'slide-placeholder bg-a\'><div class=\'slide-ph-emoji\'>🐣</div><div class=\'slide-ph-text\'>사진을 불러올 수 없어요</div></div>'" />
         </div>
         <div class="slide">
@@ -856,15 +856,17 @@
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    // 실시간 댓글 목록 렌더링
+    // pinHash를 DOM에 노출하지 않고 메모리에만 보관
+    let _store = {};
+
     onValue(commentsRef, snapshot => {
+      _store = snapshot.val() || {};
       const list = document.getElementById('comment-list');
-      const data = snapshot.val();
-      if (!data) {
+      if (!Object.keys(_store).length) {
         list.innerHTML = '<p class="no-comments">첫 번째 축하 메시지를 남겨주세요! 🎉</p>';
         return;
       }
-      const items = Object.entries(data).sort((a, b) => b[1].time - a[1].time);
+      const items = Object.entries(_store).sort((a, b) => b[1].time - a[1].time);
       list.innerHTML = items.map(([key, c]) => `
         <div class="comment-item">
           <div class="comment-header">
@@ -878,7 +880,7 @@
             <div class="del-form" id="df-${key}">
               <input class="del-input" id="dp-${key}" type="password" inputmode="numeric"
                      maxlength="4" placeholder="비밀번호 4자리" />
-              <button class="del-confirm" onclick="confirmDel('${key}','${esc(c.pinHash)}')">확인</button>
+              <button class="del-confirm" onclick="confirmDel('${key}')">확인</button>
               <button class="del-cancel"  onclick="toggleDel('${key}')">취소</button>
             </div>
           </div>` : ''}
@@ -892,27 +894,37 @@
       if (form.classList.contains('open')) document.getElementById('dp-' + key).focus();
     };
 
-    window.confirmDel = async function(key, storedHash) {
-      const pin = (document.getElementById('dp-' + key).value || '').trim();
-      if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        alert('4자리 숫자를 입력해 주세요.'); return;
-      }
+    // pinHash는 _store(메모리)에서 조회 — HTML 소스에 노출되지 않음
+    window.confirmDel = async function(key) {
+      const c = _store[key];
+      if (!c?.pinHash) return;
+      const pin = (document.getElementById('dp-' + key)?.value || '').trim();
+      if (!/^\d{4}$/.test(pin)) { alert('4자리 숫자를 입력해 주세요.'); return; }
       const hash = await hashPin(pin);
-      if (hash !== storedHash) {
+      if (hash !== c.pinHash) {
         alert('비밀번호가 틀렸습니다. 다시 확인해 주세요. 🔒'); return;
       }
       await remove(ref(db, 'dol_comments/' + key));
     };
 
+    // 스팸 방지: 30초 내 재전송 차단
+    const RATE_KEY = 'gb_last';
     window.submitComment = async function() {
+      const now = Date.now();
+      const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
+      if (now - last < 30000) {
+        alert(`잠시 후 다시 시도해 주세요. (${Math.ceil((30000 - (now - last)) / 1000)}초 후)`);
+        return;
+      }
       const name = document.getElementById('gb-name').value.trim();
       const msg  = document.getElementById('gb-msg').value.trim();
       const pin  = document.getElementById('gb-pin').value.trim();
-      if (!name || !msg)              { alert('이름과 메시지를 모두 입력해 주세요 😊'); return; }
-      if (!/^\d{4}$/.test(pin))       { alert('비밀번호는 숫자 4자리로 입력해 주세요 🔒'); return; }
+      if (!name || !msg)        { alert('이름과 메시지를 모두 입력해 주세요 😊'); return; }
+      if (!/^\d{4}$/.test(pin)) { alert('비밀번호는 숫자 4자리로 입력해 주세요 🔒'); return; }
       try {
         const pinHash = await hashPin(pin);
-        await push(commentsRef, { name, msg, pinHash, time: Date.now() });
+        await push(commentsRef, { name, msg, pinHash, time: now });
+        localStorage.setItem(RATE_KEY, String(now));
         document.getElementById('gb-name').value = '';
         document.getElementById('gb-msg').value  = '';
         document.getElementById('gb-pin').value  = '';
