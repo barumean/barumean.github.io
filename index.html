@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>이현우의 돌잔치 🎂</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet" />
   <style>
     /* ── Pretendard (제목·UI) ── */
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
@@ -126,12 +128,10 @@
       letter-spacing: 1px;
     }
     .hero-name {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 800;
+      font-family: 'Nanum Pen Script', cursive;
       font-size: 3.8rem;
       color: var(--text);
       line-height: 1.1;
-      letter-spacing: -1px;
       text-shadow: 2px 3px 0 rgba(167,149,215,0.3);
     }
     .hero-sub { font-family: 'KyoboHand', cursive; font-size: 1.1rem; color: var(--sub); margin-top: 6px; }
@@ -200,7 +200,7 @@
       color: var(--text);
       line-height: 1;
     }
-    .countdown-label { font-size: 0.7rem; color: var(--sub); margin-top: 4px; }
+    .countdown-label { font-size: 0.95rem; font-weight: 600; color: var(--sub); margin-top: 6px; }
     .countdown-done {
       font-size: 1.4rem;
       color: var(--text);
@@ -327,18 +327,21 @@
     /* ── Slideshow ── */
     .slideshow-track {
       display: flex;
-      overflow-x: auto;
+      overflow-x: scroll;
       scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
       gap: 12px;
-      padding: 4px 4px 12px;
+      padding: 4px 18px 12px;
       scrollbar-width: none;
+      scroll-padding-inline: 18px;
     }
     .slideshow-track::-webkit-scrollbar { display: none; }
     .slide {
       scroll-snap-align: center;
+      scroll-snap-stop: always;
       flex-shrink: 0;
-      width: calc(100% - 36px);
+      width: calc(100% - 60px);
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 6px 20px rgba(0,0,0,0.1);
@@ -603,7 +606,7 @@
         기쁨을 나누고 싶습니다.<br><br>
         바쁘시더라도 부디 참석하시어<br>
         우리 아이의 돌을 <strong>함께 축하</strong>해 주세요. 🎈<br><br>
-        <small>정성껏 준비하겠습니다 🙏</small>
+        정성껏 준비하겠습니다 🙏
       </p>
     </div>
 
@@ -671,8 +674,7 @@
           위 코드를 아래 placeholder 대신 넣어 주세요.
         -->
         <div class="slide">
-          <img src="photos/1.jpg" alt="현우 사진"
-               onerror="this.parentElement.innerHTML='<div class=\'slide-placeholder bg-a\'><div class=\'slide-ph-emoji\'>🐣</div><div class=\'slide-ph-text\'>사진을 불러올 수 없어요</div></div>'" />
+          <img src="photos/KakaoTalk_20251222_124953505.jpg" alt="현우 사진" />
         </div>
         <div class="slide">
           <div class="slide-placeholder bg-b">
@@ -705,7 +707,8 @@
     <!-- ── GUESTBOOK ── -->
     <div class="card">
       <div class="card-title">💬 축하 메시지</div>
-      <div class="gb-form">
+      <div class="comment-list" id="comment-list"></div>
+      <div class="gb-form" style="margin-top:20px;">
         <input  class="gb-input" id="gb-name" type="text"  placeholder="이름을 입력해 주세요" maxlength="20" />
         <textarea class="gb-input" id="gb-msg"  rows="3"   placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
         <div class="gb-pin-wrap">
@@ -716,7 +719,6 @@
         </div>
         <button class="gb-btn" onclick="submitComment()">메시지 남기기 💌</button>
       </div>
-      <div class="comment-list" id="comment-list"></div>
     </div>
 
     <footer>
