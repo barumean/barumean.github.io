@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이현우의 돌잔치 🎂</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cute+Font&family=Nanum+Pen+Script&family=Jua&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sky: #b8e4f9;
+      --cloud: #e8f5fe;
+      --mint: #a8e6cf;
+      --peach: #ffd3b6;
+      --yellow: #fff3b0;
+      --lavender: #d7c5f5;
+      --white: #ffffff;
+      --text: #4a3f6b;
+      --sub: #7a6fa8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Jua', sans-serif;
+      background: linear-gradient(180deg, #c9eeff 0%, #e8f5fe 40%, #f9f0ff 100%);
+      min-height: 100vh;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Clouds ── */
+    .clouds {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 200px;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .cloud {
+      position: absolute;
+      background: white;
+      border-radius: 50px;
+      opacity: 0.8;
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+    }
+    .cloud-1 { width: 120px; height: 40px; top: 30px; left: -150px; animation-duration: 28s; animation-delay: 0s; }
+    .cloud-1::before { width: 60px; height: 60px; top: -30px; left: 20px; }
+    .cloud-1::after  { width: 45px; height: 45px; top: -20px; left: 55px; }
+
+    .cloud-2 { width: 90px; height: 30px; top: 70px; left: -120px; opacity: 0.6; animation-duration: 35s; animation-delay: 8s; }
+    .cloud-2::before { width: 45px; height: 45px; top: -22px; left: 15px; }
+    .cloud-2::after  { width: 35px; height: 35px; top: -15px; left: 42px; }
+
+    .cloud-3 { width: 140px; height: 45px; top: 15px; left: -170px; animation-duration: 42s; animation-delay: 18s; }
+    .cloud-3::before { width: 70px; height: 70px; top: -35px; left: 25px; }
+    .cloud-3::after  { width: 55px; height: 55px; top: -28px; left: 65px; }
+
+    @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 200px)); } }
+
+    /* ── Stars / sparkles ── */
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      font-size: 1.2rem;
+      animation: twinkle 3s ease-in-out infinite;
+      z-index: 0;
+    }
+    @keyframes twinkle { 0%,100%{opacity:0;transform:scale(0.5) rotate(0deg);} 50%{opacity:1;transform:scale(1.2) rotate(20deg);} }
+
+    /* ── Layout ── */
+    .page { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 20px 60px; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 80px 0 40px;
+    }
+    .hero-bear {
+      font-size: 5rem;
+      display: block;
+      animation: bounce 2s ease-in-out infinite;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    }
+    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);} }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--lavender);
+      color: var(--sub);
+      font-size: 0.85rem;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin: 16px 0 8px;
+      letter-spacing: 1px;
+    }
+    .hero-name {
+      font-family: 'Nanum Pen Script', cursive;
+      font-size: 3.8rem;
+      color: var(--text);
+      line-height: 1.1;
+      text-shadow: 2px 3px 0 rgba(167,149,215,0.3);
+    }
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--sub);
+      margin-top: 6px;
+    }
+    .hero-birth {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      border-radius: 30px;
+      padding: 8px 20px;
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: var(--sub);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: white;
+      border-radius: 28px;
+      padding: 28px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 30px rgba(120,100,180,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--lavender), var(--sky), var(--mint));
+    }
+    .card-title {
+      font-size: 0.8rem;
+      color: var(--sub);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Countdown ── */
+    .countdown-wrap {
+      text-align: center;
+    }
+    .countdown-title {
+      font-size: 1rem;
+      color: var(--sub);
+      margin-bottom: 16px;
+    }
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .countdown-item {
+      background: linear-gradient(135deg, #e8d5f5, #c9eeff);
+      border-radius: 18px;
+      padding: 16px 12px 10px;
+      min-width: 68px;
+      text-align: center;
+    }
+    .countdown-num {
+      font-family: 'Nanum Pen Script', cursive;
+      font-size: 2.4rem;
+      color: var(--text);
+      line-height: 1;
+    }
+    .countdown-label {
+      font-size: 0.7rem;
+      color: var(--sub);
+      margin-top: 4px;
+    }
+    .countdown-done {
+      font-size: 1.4rem;
+      color: var(--text);
+      font-family: 'Nanum Pen Script', cursive;
+      padding: 12px 0;
+    }
+
+    /* ── Event Info ── */
+    .info-list { list-style: none; }
+    .info-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #ede8f8;
+      font-size: 0.95rem;
+    }
+    .info-list li:last-child { border-bottom: none; }
+    .info-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--yellow), var(--peach));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .info-key {
+      font-size: 0.75rem;
+      color: var(--sub);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .info-val { color: var(--text); line-height: 1.4; }
+
+    /* ── Map button ── */
+    .map-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: linear-gradient(135deg, #7fc8f8, #9b8fda);
+      color: white;
+      border: none;
+      border-radius: 18px;
+      padding: 16px;
+      font-family: 'Jua', sans-serif;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 16px;
+      box-shadow: 0 6px 20px rgba(127,130,248,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(127,130,248,0.45); }
+    .map-btn:active { transform: translateY(0); }
+
+    /* ── Message ── */
+    .message {
+      text-align: center;
+      line-height: 1.9;
+      font-size: 0.95rem;
+      color: var(--sub);
+    }
+    .message strong { color: var(--text); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px 0 10px;
+      font-size: 0.8rem;
+      color: #b0a8d0;
+    }
+    footer .emojis { font-size: 1.3rem; letter-spacing: 4px; display: block; margin-bottom: 4px; }
+
+    /* ── Divider ── */
+    .divider { text-align: center; font-size: 1.4rem; margin: 4px 0 20px; letter-spacing: 6px; }
+
+    /* ── Ribbon top ── */
+    .ribbon {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--white);
+      background: linear-gradient(90deg, #b39ddb, #7ec8e3);
+      padding: 10px;
+      letter-spacing: 2px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fixed ribbon -->
+  <div class="ribbon">🎈 이현우의 첫 번째 생일 🎈</div>
+
+  <!-- Clouds -->
+  <div class="clouds">
+    <div class="cloud cloud-1"></div>
+    <div class="cloud cloud-2"></div>
+    <div class="cloud cloud-3"></div>
+  </div>
+
+  <!-- Sparkles -->
+  <span class="sparkle" style="top:15%;left:5%;animation-delay:0s;">✨</span>
+  <span class="sparkle" style="top:25%;right:6%;animation-delay:1.2s;">⭐</span>
+  <span class="sparkle" style="top:45%;left:3%;animation-delay:2.1s;">💫</span>
+  <span class="sparkle" style="top:60%;right:4%;animation-delay:0.7s;">✨</span>
+  <span class="sparkle" style="top:75%;left:7%;animation-delay:1.8s;">⭐</span>
+
+  <div class="page">
+
+    <!-- ── HERO ── -->
+    <section class="hero">
+      <span class="hero-bear">🐻</span>
+      <div class="hero-tag">첫 번째 생일</div>
+      <div class="hero-name">이현우</div>
+      <p class="hero-sub">의 돌잔치에 초대합니다</p>
+      <div class="hero-birth">
+        🍼 2025년 9월 30일생
+      </div>
+    </section>
+
+    <div class="divider">🌟 ☁️ 🌟</div>
+
+    <!-- ── COUNTDOWN ── -->
+    <div class="card">
+      <div class="card-title">⏰ D-DAY 카운트다운</div>
+      <div class="countdown-wrap">
+        <p class="countdown-title">돌잔치까지</p>
+        <div class="countdown-grid" id="countdown-grid">
+          <div class="countdown-item"><div class="countdown-num" id="cd-d">--</div><div class="countdown-label">일</div></div>
+          <div class="countdown-item"><div class="countdown-num" id="cd-h">--</div><div class="countdown-label">시간</div></div>
+          <div class="countdown-item"><div class="countdown-num" id="cd-m">--</div><div class="countdown-label">분</div></div>
+          <div class="countdown-item"><div class="countdown-num" id="cd-s">--</div><div class="countdown-label">초</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EVENT INFO ── -->
+    <div class="card">
+      <div class="card-title">🎪 행사 안내</div>
+      <ul class="info-list">
+        <li>
+          <div class="info-icon">📅</div>
+          <div>
+            <span class="info-key">날짜</span>
+            <span class="info-val">2026년 10월 3일 (토) · 개천절</span>
+          </div>
+        </li>
+        <li>
+          <div class="info-icon">🕐</div>
+          <div>
+            <span class="info-key">시간</span>
+            <span class="info-val">오전 11시 30분</span>
+          </div>
+        </li>
+        <li>
+          <div class="info-icon">🏰</div>
+          <div>
+            <span class="info-key">장소</span>
+            <span class="info-val">르미엘 (Le Miel)<br>광주 광산구 왕버들로 207</span>
+          </div>
+        </li>
+      </ul>
+      <a class="map-btn" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener">
+        🗺️ 네이버 지도로 보기
+      </a>
+    </div>
+
+    <!-- ── MESSAGE ── -->
+    <div class="card">
+      <div class="card-title">💌 초대의 말씀</div>
+      <p class="message">
+        작고 소중한 아이 <strong>이현우</strong>가<br>
+        세상에 태어난 지 어느덧 <strong>일 년</strong>이 되었습니다. 🎂<br><br>
+        이 특별한 날, 소중한 분들과 함께<br>
+        기쁨을 나누고 싶습니다.<br><br>
+        바쁘시더라도 부디 참석하시어<br>
+        우리 아이의 돌을 <strong>함께 축하</strong>해 주세요. 🎈<br><br>
+        <small>정성껏 준비하겠습니다 🙏</small>
+      </p>
+    </div>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+      <span class="emojis">🌸 🐣 🌈 🐻 🌸</span>
+      현우야, 생일 축하해! 사랑해 ♡
+    </footer>
+  </div>
+
+  <script>
+    const target = new Date('2026-10-03T11:30:00+09:00');
+
+    function tick() {
+      const now = new Date();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        document.getElementById('countdown-grid').innerHTML =
+          '<div class="countdown-done">🎉 오늘이 바로 그날입니다! 🎉</div>';
+        return;
+      }
+
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+
+      document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
+      document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+      document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+      document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
