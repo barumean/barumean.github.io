@@ -158,7 +158,7 @@
       background: linear-gradient(90deg, var(--lavender), var(--sky), var(--mint));
     }
     .card-title {
-      font-size: 0.8rem;
+      font-size: 0.96rem;
       color: var(--sub);
       letter-spacing: 2px;
       margin-bottom: 14px;
@@ -410,6 +410,71 @@
     .comment-msg { font-size: 0.9rem; color: var(--sub); line-height: 1.6; }
     .no-comments { text-align: center; font-size: 0.9rem; color: #ccc; padding: 20px 0; }
 
+    /* ── Delete / PIN ── */
+    .gb-pin-wrap { position: relative; }
+    .gb-pin-wrap .pin-icon {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      color: #c0b8d8;
+      pointer-events: none;
+    }
+    .del-row { margin-top: 10px; }
+    .del-btn {
+      font-family: 'Jua', sans-serif;
+      font-size: 0.75rem;
+      background: none;
+      border: 1px solid #e8d5f5;
+      border-radius: 20px;
+      padding: 4px 10px;
+      color: var(--sub);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .del-btn:hover { background: #f3eeff; }
+    .del-form {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .del-form.open { display: flex; }
+    .del-input {
+      font-family: 'Jua', sans-serif;
+      font-size: 0.9rem;
+      letter-spacing: 4px;
+      border: 1.5px solid #e8d5f5;
+      border-radius: 10px;
+      padding: 6px 10px;
+      width: 120px;
+      outline: none;
+      color: var(--text);
+      background: #fafafe;
+    }
+    .del-input:focus { border-color: #9b8fda; }
+    .del-confirm {
+      font-family: 'Jua', sans-serif;
+      font-size: 0.8rem;
+      background: linear-gradient(135deg, #9b8fda, #7fc8f8);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .del-cancel {
+      font-family: 'Jua', sans-serif;
+      font-size: 0.8rem;
+      background: #f0f0f0;
+      color: #999;
+      border: none;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
     /* ── Footer ── */
     footer {
       text-align: center;
@@ -543,6 +608,12 @@
       <div class="gb-form">
         <input  class="gb-input" id="gb-name" type="text"  placeholder="이름을 입력해 주세요" maxlength="20" />
         <textarea class="gb-input" id="gb-msg"  rows="3"   placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
+        <div class="gb-pin-wrap">
+          <input class="gb-input" id="gb-pin" type="password" inputmode="numeric"
+                 placeholder="비밀번호 4자리 숫자 (삭제 시 필요)" maxlength="4"
+                 style="padding-right:36px;letter-spacing:4px;" />
+          <span class="pin-icon">🔒</span>
+        </div>
         <button class="gb-btn" onclick="submitComment()">메시지 남기기 💌</button>
       </div>
       <div class="comment-list" id="comment-list"></div>
@@ -755,7 +826,7 @@
   <!-- Firebase Realtime Database -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+    import { getDatabase, ref, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB95OpNaMR-Rf3o2yPGBbRyGUQ3gre49QU",
@@ -781,7 +852,13 @@
       return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    // 실시간으로 댓글 목록 업데이트
+    // PIN → SHA-256 해시 (평문 저장 방지)
+    async function hashPin(pin) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // 실시간 댓글 목록 렌더링
     onValue(commentsRef, snapshot => {
       const list = document.getElementById('comment-list');
       const data = snapshot.val();
@@ -789,27 +866,58 @@
         list.innerHTML = '<p class="no-comments">첫 번째 축하 메시지를 남겨주세요! 🎉</p>';
         return;
       }
-      const items = Object.values(data).sort((a, b) => b.time - a.time);
-      list.innerHTML = items.map(c => `
+      const items = Object.entries(data).sort((a, b) => b[1].time - a[1].time);
+      list.innerHTML = items.map(([key, c]) => `
         <div class="comment-item">
           <div class="comment-header">
             <span class="comment-name">🌸 ${esc(c.name)}</span>
             <span class="comment-time">${fmt(c.time)}</span>
           </div>
           <p class="comment-msg">${esc(c.msg)}</p>
+          ${c.pinHash ? `
+          <div class="del-row">
+            <button class="del-btn" onclick="toggleDel('${key}')">🗑️ 삭제</button>
+            <div class="del-form" id="df-${key}">
+              <input class="del-input" id="dp-${key}" type="password" inputmode="numeric"
+                     maxlength="4" placeholder="비밀번호 4자리" />
+              <button class="del-confirm" onclick="confirmDel('${key}','${esc(c.pinHash)}')">확인</button>
+              <button class="del-cancel"  onclick="toggleDel('${key}')">취소</button>
+            </div>
+          </div>` : ''}
         </div>
       `).join('');
     });
 
-    // onclick 버튼에서 호출할 수 있도록 전역 등록
+    window.toggleDel = function(key) {
+      const form = document.getElementById('df-' + key);
+      form.classList.toggle('open');
+      if (form.classList.contains('open')) document.getElementById('dp-' + key).focus();
+    };
+
+    window.confirmDel = async function(key, storedHash) {
+      const pin = (document.getElementById('dp-' + key).value || '').trim();
+      if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        alert('4자리 숫자를 입력해 주세요.'); return;
+      }
+      const hash = await hashPin(pin);
+      if (hash !== storedHash) {
+        alert('비밀번호가 틀렸습니다. 다시 확인해 주세요. 🔒'); return;
+      }
+      await remove(ref(db, 'dol_comments/' + key));
+    };
+
     window.submitComment = async function() {
       const name = document.getElementById('gb-name').value.trim();
       const msg  = document.getElementById('gb-msg').value.trim();
-      if (!name || !msg) { alert('이름과 메시지를 모두 입력해 주세요 😊'); return; }
+      const pin  = document.getElementById('gb-pin').value.trim();
+      if (!name || !msg)              { alert('이름과 메시지를 모두 입력해 주세요 😊'); return; }
+      if (!/^\d{4}$/.test(pin))       { alert('비밀번호는 숫자 4자리로 입력해 주세요 🔒'); return; }
       try {
-        await push(commentsRef, { name, msg, time: Date.now() });
+        const pinHash = await hashPin(pin);
+        await push(commentsRef, { name, msg, pinHash, time: Date.now() });
         document.getElementById('gb-name').value = '';
         document.getElementById('gb-msg').value  = '';
+        document.getElementById('gb-pin').value  = '';
         if (window.burst) window.burst(window.innerWidth / 2, window.innerHeight * 0.6);
       } catch {
         alert('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
