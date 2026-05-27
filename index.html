@@ -4,10 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>이현우의 돌잔치 🎂</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Jua&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <style>
+    /* ── Pretendard (제목·UI) ── */
+    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
+    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
+    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2'); font-weight:800; font-display:swap; }
+
+    /* ── KyoboHandwriting2019 (본문) ── */
+    @font-face { font-family:'KyoboHand'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.0/KyoboHand.woff') format('woff'); font-weight:normal; font-display:swap; }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -23,7 +31,8 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 400;
       background: linear-gradient(180deg, #c9eeff 0%, #e8f5fe 40%, #f9f0ff 100%);
       min-height: 100vh;
       color: var(--text);
@@ -117,14 +126,18 @@
       letter-spacing: 1px;
     }
     .hero-name {
-      font-family: 'Nanum Pen Script', cursive;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
       font-size: 3.8rem;
       color: var(--text);
       line-height: 1.1;
+      letter-spacing: -1px;
       text-shadow: 2px 3px 0 rgba(167,149,215,0.3);
     }
-    .hero-sub { font-size: 1rem; color: var(--sub); margin-top: 6px; }
+    .hero-sub { font-family: 'KyoboHand', cursive; font-size: 1.1rem; color: var(--sub); margin-top: 6px; }
     .hero-birth {
+      font-family: 'KyoboHand', cursive;
+      font-weight: normal;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -132,7 +145,7 @@
       border-radius: 30px;
       padding: 8px 20px;
       margin-top: 16px;
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: var(--sub);
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
@@ -158,6 +171,8 @@
       background: linear-gradient(90deg, var(--lavender), var(--sky), var(--mint));
     }
     .card-title {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 700;
       font-size: 0.96rem;
       color: var(--sub);
       letter-spacing: 2px;
@@ -179,7 +194,8 @@
       text-align: center;
     }
     .countdown-num {
-      font-family: 'Nanum Pen Script', cursive;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 700;
       font-size: 2.4rem;
       color: var(--text);
       line-height: 1;
@@ -188,15 +204,17 @@
     .countdown-done {
       font-size: 1.4rem;
       color: var(--text);
-      font-family: 'Nanum Pen Script', cursive;
+      font-family: 'KyoboHand', cursive;
       padding: 12px 0;
     }
 
     /* ── Message ── */
     .message {
+      font-family: 'KyoboHand', cursive;
+      font-weight: normal;
       text-align: center;
-      line-height: 1.9;
-      font-size: 0.95rem;
+      line-height: 2;
+      font-size: 1.05rem;
       color: var(--sub);
     }
     .message strong { color: var(--text); }
@@ -295,7 +313,8 @@
       border: none;
       border-radius: 18px;
       padding: 16px;
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 1rem;
       cursor: pointer;
       text-decoration: none;
@@ -339,7 +358,7 @@
       gap: 10px;
     }
     .slide-ph-emoji { font-size: 3.5rem; }
-    .slide-ph-text { font-size: 0.9rem; color: rgba(74,63,107,0.55); }
+    .slide-ph-text { font-family: 'KyoboHand', cursive; font-weight: normal; font-size: 1rem; color: rgba(74,63,107,0.55); }
     .bg-a { background: linear-gradient(135deg, #ffd3b6, #fff3b0); }
     .bg-b { background: linear-gradient(135deg, #c9eeff, #a8e6cf); }
     .bg-c { background: linear-gradient(135deg, #d7c5f5, #ffd3b6); }
@@ -368,8 +387,9 @@
     /* ── Guestbook ── */
     .gb-form { display: flex; flex-direction: column; gap: 10px; }
     .gb-input {
-      font-family: 'Jua', sans-serif;
-      font-size: 0.9rem;
+      font-family: 'KyoboHand', cursive;
+      font-weight: normal;
+      font-size: 0.95rem;
       border: 2px solid #ede8f8;
       border-radius: 14px;
       padding: 12px 14px;
@@ -381,7 +401,8 @@
     }
     .gb-input:focus { border-color: #9b8fda; }
     .gb-btn {
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 1rem;
       background: linear-gradient(135deg, #c5b8f0, #9b8fda);
       color: white;
@@ -407,7 +428,7 @@
     }
     .comment-name { font-size: 0.9rem; color: var(--text); }
     .comment-time { font-size: 0.72rem; color: #bbb; }
-    .comment-msg { font-size: 0.9rem; color: var(--sub); line-height: 1.6; }
+    .comment-msg { font-family: 'KyoboHand', cursive; font-weight: normal; font-size: 1rem; color: var(--sub); line-height: 1.7; }
     .no-comments { text-align: center; font-size: 0.9rem; color: #ccc; padding: 20px 0; }
 
     /* ── Delete / PIN ── */
@@ -422,7 +443,8 @@
     }
     .del-row { margin-top: 10px; }
     .del-btn {
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 0.75rem;
       background: none;
       border: 1px solid #e8d5f5;
@@ -442,7 +464,8 @@
     }
     .del-form.open { display: flex; }
     .del-input {
-      font-family: 'Jua', sans-serif;
+      font-family: 'KyoboHand', cursive;
+      font-weight: normal;
       font-size: 0.9rem;
       letter-spacing: 4px;
       border: 1.5px solid #e8d5f5;
@@ -455,7 +478,8 @@
     }
     .del-input:focus { border-color: #9b8fda; }
     .del-confirm {
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 0.8rem;
       background: linear-gradient(135deg, #9b8fda, #7fc8f8);
       color: white;
@@ -465,7 +489,8 @@
       cursor: pointer;
     }
     .del-cancel {
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 0.8rem;
       background: #f0f0f0;
       color: #999;
@@ -504,7 +529,8 @@
       gap: 5px;
       padding: 12px 6px;
       border-radius: 14px;
-      font-family: 'Jua', sans-serif;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 600;
       font-size: 0.8rem;
       text-decoration: none;
       border: none;
