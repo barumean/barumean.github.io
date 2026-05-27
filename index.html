@@ -513,7 +513,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     .nav-btn:hover, .nav-btn:active { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
-    .nav-logo { font-size: 1.4rem; }
+    .nav-logo { width: 28px; height: 28px; display: block; }
     .nav-btn.naver { background: #03c75a; color: white; }
     .nav-btn.kakao { background: #fee500; color: #3c1e1e; }
     .nav-btn.tmap  { background: #1a6cff; color: white; }
@@ -612,14 +612,26 @@
       <!-- 지도 앱 연결 -->
       <div class="nav-btns">
         <a class="nav-btn naver" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener noreferrer">
-          <span class="nav-logo">🗺️</span>네이버
+          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+            <rect width="30" height="30" rx="7" fill="#03C75A"/>
+            <path d="M17.8 15.9L12.2 8H9v14h3.2V14.1l5.6 7.9H21V8h-3.2z" fill="white"/>
+          </svg>
+          네이버
         </a>
-        <a class="nav-btn kakao" href="https://map.kakao.com/link/search/광주+광산구+왕버들로+207" target="_blank" rel="noopener noreferrer">
-          <span class="nav-logo">🟡</span>카카오
+        <a class="nav-btn kakao" href="https://kko.to/hOKeHXOQA9" target="_blank" rel="noopener noreferrer">
+          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+            <rect width="30" height="30" rx="7" fill="#FEE500"/>
+            <path d="M15 5.5C9.2 5.5 4.5 9.25 4.5 13.9c0 2.95 1.88 5.55 4.72 7.1l-1.05 3.9 3.7-2.4c1 .2 2.05.3 3.13.3 5.8 0 10.5-3.75 10.5-8.4S20.8 5.5 15 5.5z" fill="#3C1E1E"/>
+          </svg>
+          카카오
         </a>
-        <button class="nav-btn tmap" onclick="openTmap()">
-          <span class="nav-logo">🚗</span>티맵
-        </button>
+        <a class="nav-btn tmap" href="https://tmap.life/982b8579" target="_blank" rel="noopener noreferrer">
+          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
+            <rect width="30" height="30" rx="7" fill="#1352FF"/>
+            <path d="M8 10h14v2.5h-5.5V22H14V12.5H8z" fill="white"/>
+          </svg>
+          티맵
+        </a>
       </div>
     </div>
 
@@ -878,16 +890,6 @@
       slides.forEach(s => io.observe(s));
     })();
 
-
-    // ─── 지도 앱 연결 ────────────────────────────────────────────────
-    function openTmap() {
-      // T-Map 앱 URL 시도 → 설치 안 된 경우 2초 후 웹으로 폴백
-      const name = encodeURIComponent('르미엘');
-      window.location.href = `tmap://route?goalname=${name}&goalx=126.8430&goaly=35.1482`;
-      setTimeout(function() {
-        window.open('https://tmap.life/', '_blank');
-      }, 2000);
-    }
 
     // 댓글 입력창 Enter 키 처리
     document.getElementById('gb-name').addEventListener('keydown', e => {
