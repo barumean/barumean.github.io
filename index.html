@@ -21,13 +21,15 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --sky: #b8e4f9;
-      --mint: #a8e6cf;
-      --peach: #ffd3b6;
-      --yellow: #fff3b0;
-      --lavender: #d7c5f5;
-      --text: #4a3f6b;
-      --sub: #7a6fa8;
+      --sky: #FFE2E2;
+      --mint: #F6F6F6;
+      --peach: #FFE2E2;
+      --yellow: #FFF0F0;
+      --lavender: #FFC7C7;
+      --white: #ffffff;
+      --text: #3a3a3a;
+      --sub: #888888;
+      --gray: #AAAAAA;
     }
 
     html { scroll-behavior: smooth; }
@@ -35,7 +37,7 @@
     body {
       font-family: 'Pretendard', sans-serif;
       font-weight: 400;
-      background: linear-gradient(180deg, #c9eeff 0%, #e8f5fe 40%, #f9f0ff 100%);
+      background: linear-gradient(180deg, #FFE2E2 0%, #F6F6F6 50%, #FFE2E2 100%);
       min-height: 100vh;
       color: var(--text);
       overflow-x: hidden;
@@ -95,8 +97,8 @@
     .ribbon {
       text-align: center;
       font-size: 0.85rem;
-      color: white;
-      background: linear-gradient(90deg, #b39ddb, #7ec8e3);
+      color: #888888;
+      background: linear-gradient(90deg, #FFC7C7, #FFE2E2);
       padding: 10px;
       letter-spacing: 2px;
       position: fixed;
@@ -110,13 +112,18 @@
       text-align: center;
       padding: 80px 0 30px;
     }
-    .hero-bear {
+    .hero-snake {
       font-size: 5rem;
       display: block;
-      animation: bounce 2s ease-in-out infinite;
+      animation: wiggle 2s ease-in-out infinite;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
     }
-    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-8deg) translateY(0); }
+      25%       { transform: rotate(0deg)  translateY(-8px); }
+      50%       { transform: rotate(8deg)  translateY(0); }
+      75%       { transform: rotate(0deg)  translateY(-8px); }
+    }
     .hero-tag {
       display: inline-block;
       background: var(--lavender);
@@ -132,7 +139,7 @@
       font-size: 3.8rem;
       color: var(--text);
       line-height: 1.1;
-      text-shadow: 2px 3px 0 rgba(167,149,215,0.3);
+      text-shadow: 2px 3px 0 rgba(255,199,199,0.5);
     }
     .hero-sub { font-family: 'KyoboHand', cursive; font-size: 1.1rem; color: var(--sub); margin-top: 6px; }
     .hero-birth {
@@ -159,7 +166,7 @@
       border-radius: 28px;
       padding: 28px 24px;
       margin-bottom: 20px;
-      box-shadow: 0 8px 30px rgba(120,100,180,0.1);
+      box-shadow: 0 8px 30px rgba(200,150,150,0.1);
       position: relative;
       overflow: hidden;
     }
@@ -187,7 +194,7 @@
     .countdown-title { font-size: 1rem; color: var(--sub); margin-bottom: 16px; }
     .countdown-grid { display: flex; justify-content: center; gap: 12px; }
     .countdown-item {
-      background: linear-gradient(135deg, #e8d5f5, #c9eeff);
+      background: linear-gradient(135deg, #FFE2E2, #FFC7C7);
       border-radius: 18px;
       padding: 16px 12px 10px;
       min-width: 68px;
@@ -252,17 +259,17 @@
       position: relative;
     }
     .cal-date.sun { color: #e88; }
-    .cal-date.sat { color: #7a6fa8; }
+    .cal-date.sat { color: #AAAAAA; }
     .cal-date.target {
-      background: linear-gradient(135deg, #9b8fda, #7fc8f8);
+      background: linear-gradient(135deg, #FFC7C7, #AAAAAA);
       color: white !important;
       font-size: 0.95rem;
-      box-shadow: 0 4px 12px rgba(127,130,248,0.4);
+      box-shadow: 0 4px 12px rgba(255,199,199,0.5);
       animation: pulse-cal 2s ease-in-out infinite;
     }
     @keyframes pulse-cal {
-      0%,100% { transform: scale(1);   box-shadow: 0 4px 12px rgba(127,130,248,0.4); }
-      50%      { transform: scale(1.12); box-shadow: 0 6px 20px rgba(127,130,248,0.6); }
+      0%,100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(255,199,199,0.5); }
+      50%      { transform: scale(1.12); box-shadow: 0 6px 20px rgba(255,199,199,0.7); }
     }
     .cal-star {
       font-size: 0.45rem;
@@ -274,7 +281,7 @@
       margin-top: 14px;
       font-size: 0.88rem;
       color: var(--sub);
-      background: linear-gradient(135deg, #f0ecff, #e8f5fe);
+      background: linear-gradient(135deg, #FFE2E2, #F6F6F6);
       border-radius: 12px;
       padding: 10px;
     }
@@ -286,7 +293,7 @@
       align-items: flex-start;
       gap: 14px;
       padding: 10px 0;
-      border-bottom: 1px dashed #ede8f8;
+      border-bottom: 1px dashed #FFE2E2;
       font-size: 0.95rem;
     }
     .info-list li:last-child { border-bottom: none; }
@@ -308,7 +315,7 @@
       justify-content: center;
       gap: 8px;
       width: 100%;
-      background: linear-gradient(135deg, #7fc8f8, #9b8fda);
+      background: linear-gradient(135deg, #FFC7C7, #AAAAAA);
       color: white;
       border: none;
       border-radius: 18px;
@@ -319,10 +326,10 @@
       cursor: pointer;
       text-decoration: none;
       margin-top: 16px;
-      box-shadow: 0 6px 20px rgba(127,130,248,0.35);
+      box-shadow: 0 6px 20px rgba(255,199,199,0.4);
       transition: transform 0.15s, box-shadow 0.15s;
     }
-    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(127,130,248,0.45); }
+    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255,199,199,0.55); }
 
     /* ── Slideshow ── */
     .slideshow-track {
@@ -376,13 +383,13 @@
     .dot {
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: #d7c5f5;
+      background: #FFC7C7;
       transition: all 0.3s;
       cursor: pointer;
       flex-shrink: 0;
     }
     .dot.active {
-      background: #9b8fda;
+      background: #AAAAAA;
       width: 20px;
       border-radius: 4px;
     }
@@ -393,33 +400,33 @@
       font-family: 'KyoboHand', cursive;
       font-weight: normal;
       font-size: 0.95rem;
-      border: 2px solid #ede8f8;
+      border: 2px solid #FFE2E2;
       border-radius: 14px;
       padding: 12px 14px;
       outline: none;
       color: var(--text);
-      background: #fafafe;
+      background: #F6F6F6;
       transition: border-color 0.2s;
       resize: none;
     }
-    .gb-input:focus { border-color: #9b8fda; }
+    .gb-input:focus { border-color: #FFC7C7; }
     .gb-btn {
       font-family: 'Pretendard', sans-serif;
       font-weight: 600;
       font-size: 1rem;
-      background: linear-gradient(135deg, #c5b8f0, #9b8fda);
+      background: linear-gradient(135deg, #FFC7C7, #AAAAAA);
       color: white;
       border: none;
       border-radius: 14px;
       padding: 14px;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(155,143,218,0.4);
+      box-shadow: 0 4px 14px rgba(255,199,199,0.5);
       transition: transform 0.15s;
     }
     .gb-btn:hover { transform: translateY(-1px); }
     .comment-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
     .comment-item {
-      background: linear-gradient(135deg, #fafafe, #f3f0ff);
+      background: linear-gradient(135deg, #F6F6F6, #FFE2E2);
       border-radius: 16px;
       padding: 14px 16px;
     }
@@ -441,7 +448,7 @@
       right: 14px; top: 50%;
       transform: translateY(-50%);
       font-size: 0.8rem;
-      color: #c0b8d8;
+      color: #FFC7C7;
       pointer-events: none;
     }
     .del-row { margin-top: 10px; }
@@ -450,14 +457,14 @@
       font-weight: 600;
       font-size: 0.75rem;
       background: none;
-      border: 1px solid #e8d5f5;
+      border: 1px solid #FFC7C7;
       border-radius: 20px;
       padding: 4px 10px;
       color: var(--sub);
       cursor: pointer;
       transition: background 0.15s;
     }
-    .del-btn:hover { background: #f3eeff; }
+    .del-btn:hover { background: #FFE2E2; }
     .del-form {
       display: none;
       align-items: center;
@@ -471,20 +478,20 @@
       font-weight: normal;
       font-size: 0.9rem;
       letter-spacing: 4px;
-      border: 1.5px solid #e8d5f5;
+      border: 1.5px solid #FFC7C7;
       border-radius: 10px;
       padding: 6px 10px;
       width: 120px;
       outline: none;
       color: var(--text);
-      background: #fafafe;
+      background: #F6F6F6;
     }
-    .del-input:focus { border-color: #9b8fda; }
+    .del-input:focus { border-color: #FFC7C7; }
     .del-confirm {
       font-family: 'Pretendard', sans-serif;
       font-weight: 600;
       font-size: 0.8rem;
-      background: linear-gradient(135deg, #9b8fda, #7fc8f8);
+      background: linear-gradient(135deg, #FFC7C7, #AAAAAA);
       color: white;
       border: none;
       border-radius: 10px;
@@ -552,7 +559,7 @@
       text-align: center;
       padding: 20px 0 10px;
       font-size: 0.8rem;
-      color: #b0a8d0;
+      color: #AAAAAA;
     }
     footer .emojis { font-size: 1.3rem; letter-spacing: 4px; display: block; margin-bottom: 4px; }
   </style>
@@ -573,7 +580,7 @@
 
     <!-- ── HERO ── -->
     <section class="hero">
-      <span class="hero-bear">🐻</span>
+      <span class="hero-snake">🐍</span>
       <div class="hero-tag">첫 번째 생일</div>
       <div class="hero-name">이현우</div>
       <p class="hero-sub">의 돌잔치에 초대합니다</p>
@@ -702,7 +709,7 @@
     </div>
 
     <footer>
-      <span class="emojis">🌸 🐣 🌈 🐻 🌸</span>
+      <span class="emojis">🌸 🐣 🌈 🐍 🌸</span>
       현우야, 생일 축하해! 사랑해 ♡
     </footer>
 
@@ -761,7 +768,7 @@
         this.life = this.max;
         this.decay = 0.0018 + Math.random() * 0.0015;
         this.r = Math.random() * 3.5 + 1.5;
-        this.hue = Math.random() * 80 + 200;
+        this.hue = Math.random() * 40 + 330;
       }
       step() {
         this.x += this.vx;
@@ -841,7 +848,7 @@
         el.className = 'cal-day-label';
         el.textContent = lb;
         if (i === 0) el.style.color = '#e88';
-        if (i === 6) el.style.color = '#9b8fda';
+        if (i === 6) el.style.color = '#AAAAAA';
         daysRow.appendChild(el);
       });
 
