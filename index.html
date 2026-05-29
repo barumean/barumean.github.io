@@ -224,6 +224,7 @@
       line-height: 2;
       font-size: 1.05rem;
       color: var(--sub);
+      word-break: keep-all;
     }
     .message strong { color: var(--text); }
 
@@ -443,14 +444,20 @@
     .no-comments { text-align: center; font-size: 0.9rem; color: #ccc; padding: 20px 0; }
 
     /* ── Delete / PIN ── */
-    .gb-pin-wrap { position: relative; }
-    .gb-pin-wrap .pin-icon {
-      position: absolute;
-      right: 14px; top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.8rem;
-      color: rgba(192,133,82,0.5);
-      pointer-events: none;
+    .gb-pin-wrap { display: flex; align-items: center; gap: 10px; }
+    .pin-label {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 0.83rem;
+      color: var(--sub);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .gb-pin-input {
+      width: 120px !important;
+      text-align: center;
+      letter-spacing: 6px;
+      padding: 10px 8px !important;
+      font-size: 1.05rem !important;
     }
     .del-row { margin-top: 10px; }
     .del-btn {
@@ -584,7 +591,7 @@
       <span class="hero-snake">🐍</span>
       <div class="hero-tag">첫 번째 생일</div>
       <div class="hero-name">이현우</div>
-      <p class="hero-sub">의 돌잔치에 초대합니다</p>
+      <p class="hero-sub">의 <strong style="color:var(--lavender); font-weight:700;">돌잔치</strong>에 초대합니다</p>
       <div class="hero-birth">🍼 2025년 9월 30일생</div>
     </section>
 
@@ -700,10 +707,9 @@
         <input  class="gb-input" id="gb-name" type="text"  placeholder="이름을 입력해 주세요" maxlength="20" />
         <textarea class="gb-input" id="gb-msg"  rows="3"   placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
         <div class="gb-pin-wrap">
-          <input class="gb-input" id="gb-pin" type="password" inputmode="numeric"
-                 placeholder="비밀번호 4자리 숫자 (삭제 시 필요)" maxlength="4"
-                 style="padding-right:36px;letter-spacing:4px;" />
-          <span class="pin-icon">🔒</span>
+          <span class="pin-label">🔒 비밀번호 (삭제용)</span>
+          <input class="gb-input gb-pin-input" id="gb-pin" type="password" inputmode="numeric"
+                 placeholder="0000" maxlength="4" />
         </div>
         <button class="gb-btn" onclick="submitComment()">메시지 남기기 💌</button>
       </div>
