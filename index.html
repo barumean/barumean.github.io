@@ -8,15 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet" />
   <style>
-    /* ── Pretendard (제목·UI) ── */
+    /* ── Pretendard ── */
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2'); font-weight:800; font-display:swap; }
-
-    /* ── KyoboHandwriting2019 (본문) ── */
-    @font-face { font-family:'KyoboHand'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.0/KyoboHand.woff') format('woff'); font-weight:normal; font-display:swap; }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -43,36 +40,13 @@
       overflow-x: hidden;
     }
 
-    /* ── Canvas (touch particles) ── */
-    #bg-canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 1;
-    }
+    /* ── Canvas ── */
+    #bg-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
 
     /* ── Clouds ── */
-    .clouds {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 200px;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .cloud {
-      position: absolute;
-      background: white;
-      border-radius: 50px;
-      opacity: 0.8;
-      animation: drift linear infinite;
-    }
-    .cloud::before, .cloud::after {
-      content: '';
-      position: absolute;
-      background: white;
-      border-radius: 50%;
-    }
+    .clouds { position: fixed; top: 0; left: 0; width: 100%; height: 200px; pointer-events: none; z-index: 0; overflow: hidden; }
+    .cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.8; animation: drift linear infinite; }
+    .cloud::before, .cloud::after { content: ''; position: absolute; background: white; border-radius: 50%; }
     .cloud-1 { width: 120px; height: 40px; top: 30px; left: -150px; animation-duration: 28s; }
     .cloud-1::before { width: 60px; height: 60px; top: -30px; left: 20px; }
     .cloud-1::after  { width: 45px; height: 45px; top: -20px; left: 55px; }
@@ -85,13 +59,7 @@
     @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 200px)); } }
 
     /* ── Layout ── */
-    .page {
-      position: relative;
-      z-index: 2;
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 0 20px 80px;
-    }
+    .page { position: relative; z-index: 2; max-width: 480px; margin: 0 auto; padding: 0 20px 80px; }
 
     /* ── Ribbon ── */
     .ribbon {
@@ -108,10 +76,7 @@
     }
 
     /* ── Hero ── */
-    .hero {
-      text-align: center;
-      padding: 80px 0 30px;
-    }
+    .hero { text-align: center; padding: 80px 0 24px; }
     .hero-snake {
       font-size: 5rem;
       display: block;
@@ -124,24 +89,14 @@
       50%       { transform: rotate(8deg)  translateY(0); }
       75%       { transform: rotate(0deg)  translateY(-8px); }
     }
-    .hero-tag {
-      display: inline-block;
-      background: rgba(192,133,82,0.15);
-      color: var(--sub);
-      font-size: 0.85rem;
-      padding: 4px 14px;
-      border-radius: 20px;
-      margin: 16px 0 8px;
-      letter-spacing: 1px;
-    }
     .hero-name {
       font-family: 'Nanum Pen Script', cursive;
       font-size: 3.8rem;
       color: var(--text);
       line-height: 1.1;
       text-shadow: 2px 3px 0 rgba(192,133,82,0.3);
+      margin-top: 6px;
     }
-    .hero-sub { font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 1.1rem; color: var(--sub); margin-top: 6px; }
     .hero-birth {
       font-family: 'Pretendard', sans-serif;
       font-weight: 400;
@@ -151,16 +106,24 @@
       background: white;
       border-radius: 30px;
       padding: 8px 20px;
-      margin-top: 16px;
-      font-size: 1rem;
+      margin-top: 14px;
+      font-size: 0.95rem;
       color: var(--sub);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
     }
+    .hero-hint {
+      margin-top: 20px;
+      font-size: 0.82rem;
+      color: rgba(192,133,82,0.7);
+      letter-spacing: 0.5px;
+      animation: hint-pulse 2s ease-in-out infinite;
+    }
+    @keyframes hint-pulse { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
 
     /* ── Divider ── */
     .divider { text-align: center; font-size: 1.4rem; margin: 4px 0 20px; letter-spacing: 6px; }
 
-    /* ── Card base ── */
+    /* ── Card ── */
     .card {
       background: white;
       border-radius: 28px;
@@ -189,72 +152,196 @@
       gap: 6px;
     }
 
-    /* ── Countdown ── */
-    .countdown-wrap { text-align: center; }
-    .countdown-title { font-size: 1rem; color: var(--sub); margin-bottom: 16px; }
-    .countdown-grid { display: flex; justify-content: center; gap: 12px; }
-    .countdown-item {
-      background: linear-gradient(135deg, #FFF8F0, rgba(192,133,82,0.2));
-      border-radius: 18px;
-      padding: 16px 12px 10px;
-      min-width: 68px;
-      text-align: center;
+    /* ══════════════════════════════════════════
+       TIMELINE
+    ══════════════════════════════════════════ */
+    .tl-section {
+      position: relative;
+      padding: 0 0 20px;
     }
-    .countdown-num {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 700;
-      font-size: 2.4rem;
-      color: var(--text);
-      line-height: 1;
-    }
-    .countdown-label { font-size: 0.95rem; font-weight: 600; color: var(--sub); margin-top: 6px; }
-    .countdown-done {
-      font-size: 1.4rem;
-      color: var(--text);
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      padding: 12px 0;
+    .tl-line {
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(
+        180deg,
+        rgba(192,133,82,0.1) 0%,
+        #C08552 8%,
+        #8C5A3C 92%,
+        rgba(140,90,60,0.1) 100%
+      );
+      transform: translateX(-50%);
+      z-index: 0;
     }
 
-    /* ── Message ── */
-    .message {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      text-align: center;
-      line-height: 2;
-      font-size: 1.05rem;
-      color: var(--sub);
-      word-break: keep-all;
-    }
-    .message strong { color: var(--text); }
-
-    /* ── Calendar ── */
-    .cal-month {
-      text-align: center;
-      font-size: 1.1rem;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-    .cal-days {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      text-align: center;
-      gap: 2px;
-      margin-bottom: 4px;
-    }
-    .cal-day-label { font-size: 0.72rem; color: var(--sub); padding: 4px 0; }
-    .cal-dates {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
-      text-align: center;
-    }
-    .cal-date {
-      aspect-ratio: 1;
+    .tl-item {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .tl-item.tl-show { opacity: 1; transform: translateY(0); }
+
+    /* Each side (photo or info) */
+    .tl-half { width: calc(50% - 22px); }
+
+    /* Center dot column */
+    .tl-mid {
+      width: 44px;
+      flex-shrink: 0;
+      display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 2;
+    }
+    .tl-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #C08552;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px #C08552;
+      flex-shrink: 0;
+    }
+    .tl-dot.tl-dot-star {
+      width: 18px; height: 18px;
+      background: #8C5A3C;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px #8C5A3C, 0 0 0 5px rgba(192,133,82,0.25);
+    }
+
+    /* Photo box */
+    .tl-photo {
+      width: 100%;
+      height: 155px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 5px 18px rgba(75,46,43,0.13);
+    }
+    .tl-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Emoji placeholder */
+    .tl-emoji-box {
+      width: 100%;
+      height: 155px;
+      background: rgba(192,133,82,0.07);
+      border: 1.5px dashed rgba(192,133,82,0.28);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+    }
+
+    /* Info text */
+    .tl-info { }
+    .tl-info.r { text-align: right; }
+    .tl-badge {
+      display: inline-block;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #C08552;
+      background: rgba(192,133,82,0.12);
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-bottom: 5px;
+    }
+    .tl-badge.gold {
+      background: linear-gradient(135deg, #C08552, #8C5A3C);
+      color: white;
+      font-size: 1rem;
+      padding: 5px 14px;
+      border-radius: 16px;
+    }
+    .tl-sub {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 400;
+      font-size: 0.76rem;
+      color: #8C5A3C;
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+    .tl-date-txt {
+      font-size: 0.67rem;
+      color: rgba(192,133,82,0.65);
+      margin-top: 3px;
+      font-family: 'Pretendard', sans-serif;
+    }
+
+    /* Special 1살 finale item */
+    .tl-finale {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0;
+    }
+    .tl-finale-photo {
+      width: 100%;
+      max-width: 260px;
+      height: 220px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(75,46,43,0.18);
+    }
+    .tl-finale-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .tl-finale-info { text-align: center; }
+
+    /* ── Invite reveal ── */
+    .tl-invite {
+      text-align: center;
+      padding: 28px 16px 8px;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .tl-invite.tl-show { opacity: 1; transform: translateY(0); }
+    .tl-invite-title {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 800;
+      font-size: 1.55rem;
+      color: #4B2E2B;
+      line-height: 1.4;
+      word-break: keep-all;
+      margin-bottom: 6px;
+    }
+    .tl-invite-name {
+      font-family: 'Nanum Pen Script', cursive;
+      font-size: 2.4rem;
+      color: #C08552;
+      display: block;
+    }
+    .tl-invite-date {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #8C5A3C;
+      margin-top: 10px;
+      letter-spacing: 0.5px;
+    }
+    .tl-invite-msg {
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 400;
+      font-size: 0.9rem;
+      color: var(--sub);
+      margin-top: 10px;
+      line-height: 1.9;
+      word-break: keep-all;
+    }
+    .tl-invite-msg strong { color: var(--text); }
+
+    /* ── Calendar ── */
+    .cal-month { text-align: center; font-size: 1.1rem; color: var(--text); margin-bottom: 12px; }
+    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 2px; margin-bottom: 4px; }
+    .cal-day-label { font-size: 0.72rem; color: var(--sub); padding: 4px 0; }
+    .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+    .cal-date {
+      aspect-ratio: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       font-size: 0.85rem;
       border-radius: 50%;
       color: var(--text);
@@ -273,11 +360,7 @@
       0%,100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(192,133,82,0.4); }
       50%      { transform: scale(1.12); box-shadow: 0 6px 20px rgba(192,133,82,0.6); }
     }
-    .cal-star {
-      font-size: 0.45rem;
-      position: absolute;
-      top: -1px; right: 0;
-    }
+    .cal-star { font-size: 0.45rem; position: absolute; top: -1px; right: 0; }
     .cal-event-label {
       text-align: center;
       margin-top: 14px;
@@ -291,17 +374,14 @@
     /* ── Info list ── */
     .info-list { list-style: none; margin-top: 16px; }
     .info-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
+      display: flex; align-items: flex-start; gap: 14px;
       padding: 10px 0;
       border-bottom: 1px dashed rgba(192,133,82,0.25);
       font-size: 0.95rem;
     }
     .info-list li:last-child { border-bottom: none; }
     .info-icon {
-      font-size: 1.3rem;
-      flex-shrink: 0;
+      font-size: 1.3rem; flex-shrink: 0;
       width: 36px; height: 36px;
       background: rgba(192,133,82,0.1);
       border-radius: 50%;
@@ -312,22 +392,12 @@
 
     /* ── Map button ── */
     .map-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       width: 100%;
       background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white;
-      border: none;
-      border-radius: 18px;
-      padding: 16px;
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      text-decoration: none;
-      margin-top: 16px;
+      color: white; border: none; border-radius: 18px; padding: 16px;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 1rem;
+      cursor: pointer; text-decoration: none; margin-top: 16px;
       box-shadow: 0 6px 20px rgba(192,133,82,0.35);
       transition: transform 0.15s, box-shadow 0.15s;
     }
@@ -335,109 +405,44 @@
 
     /* ── Slideshow ── */
     .slideshow-track {
-      display: flex;
-      overflow-x: scroll;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      gap: 12px;
-      padding: 4px 18px 12px;
-      scrollbar-width: none;
-      scroll-padding-inline: 18px;
+      display: flex; overflow-x: scroll; scroll-snap-type: x mandatory;
+      scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+      gap: 12px; padding: 4px 18px 12px; scrollbar-width: none; scroll-padding-inline: 18px;
     }
     .slideshow-track::-webkit-scrollbar { display: none; }
     .slide {
-      scroll-snap-align: center;
-      scroll-snap-stop: always;
-      flex-shrink: 0;
-      width: calc(100% - 60px);
-      border-radius: 20px;
-      overflow: hidden;
+      scroll-snap-align: center; scroll-snap-stop: always; flex-shrink: 0;
+      width: calc(100% - 60px); border-radius: 20px; overflow: hidden;
       box-shadow: 0 6px 20px rgba(0,0,0,0.1);
     }
-    .slide img {
-      width: 100%;
-      height: 280px;
-      object-fit: cover;
-      display: block;
-    }
-    .slide-placeholder {
-      height: 280px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .slide-ph-emoji { font-size: 3.5rem; }
-    .slide-ph-text { font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 1rem; color: rgba(75,46,43,0.55); }
-    .bg-a { background: linear-gradient(135deg, #ffd3b6, #fff3b0); }
-    .bg-b { background: linear-gradient(135deg, #c9eeff, #a8e6cf); }
-    .bg-c { background: linear-gradient(135deg, #d7c5f5, #ffd3b6); }
-    .bg-d { background: linear-gradient(135deg, #a8e6cf, #c9eeff); }
-    .bg-e { background: linear-gradient(135deg, #fff3b0, #d7c5f5); }
-    .slide-dots {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
+    .slide img { width: 100%; height: 280px; object-fit: cover; display: block; }
+    .slide-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
     .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       background: rgba(192,133,82,0.3);
-      transition: all 0.3s;
-      cursor: pointer;
-      flex-shrink: 0;
+      transition: all 0.3s; cursor: pointer; flex-shrink: 0;
     }
-    .dot.active {
-      background: #8C5A3C;
-      width: 20px;
-      border-radius: 4px;
-    }
+    .dot.active { background: #8C5A3C; width: 20px; border-radius: 4px; }
 
     /* ── Guestbook ── */
     .gb-form { display: flex; flex-direction: column; gap: 10px; }
     .gb-input {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      font-size: 0.95rem;
-      border: 2px solid rgba(192,133,82,0.3);
-      border-radius: 14px;
-      padding: 12px 14px;
-      outline: none;
-      color: var(--text);
-      background: #FFF8F0;
-      transition: border-color 0.2s;
-      resize: none;
+      font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 0.95rem;
+      border: 2px solid rgba(192,133,82,0.3); border-radius: 14px; padding: 12px 14px;
+      outline: none; color: var(--text); background: #FFF8F0;
+      transition: border-color 0.2s; resize: none;
     }
     .gb-input:focus { border-color: #C08552; }
     .gb-btn {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 1rem;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 1rem;
       background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white;
-      border: none;
-      border-radius: 14px;
-      padding: 14px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(192,133,82,0.4);
-      transition: transform 0.15s;
+      color: white; border: none; border-radius: 14px; padding: 14px; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(192,133,82,0.4); transition: transform 0.15s;
     }
     .gb-btn:hover { transform: translateY(-1px); }
     .comment-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .comment-item {
-      background: #FFF8F0;
-      border-radius: 16px;
-      padding: 14px 16px;
-    }
-    .comment-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
+    .comment-item { background: #FFF8F0; border-radius: 16px; padding: 14px 16px; }
+    .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .comment-name { font-size: 0.9rem; color: var(--text); }
     .comment-time { font-size: 0.72rem; color: #bbb; }
     .comment-msg { font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 1rem; color: var(--sub); line-height: 1.7; }
@@ -445,114 +450,44 @@
 
     /* ── Delete / PIN ── */
     .gb-pin-wrap { display: flex; align-items: center; gap: 10px; }
-    .pin-label {
-      font-family: 'Pretendard', sans-serif;
-      font-size: 0.83rem;
-      color: var(--sub);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .gb-pin-input {
-      width: 120px !important;
-      text-align: center;
-      letter-spacing: 6px;
-      padding: 10px 8px !important;
-      font-size: 1.05rem !important;
-    }
+    .pin-label { font-family: 'Pretendard', sans-serif; font-size: 0.83rem; color: var(--sub); white-space: nowrap; flex-shrink: 0; }
+    .gb-pin-input { width: 120px !important; text-align: center; letter-spacing: 6px; padding: 10px 8px !important; font-size: 1.05rem !important; }
     .del-row { margin-top: 10px; }
     .del-btn {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 0.75rem;
-      background: none;
-      border: 1px solid rgba(192,133,82,0.35);
-      border-radius: 20px;
-      padding: 4px 10px;
-      color: var(--sub);
-      cursor: pointer;
-      transition: background 0.15s;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.75rem;
+      background: none; border: 1px solid rgba(192,133,82,0.35); border-radius: 20px;
+      padding: 4px 10px; color: var(--sub); cursor: pointer; transition: background 0.15s;
     }
     .del-btn:hover { background: #FFF8F0; }
-    .del-form {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
+    .del-form { display: none; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .del-form.open { display: flex; }
     .del-input {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      font-size: 0.9rem;
-      letter-spacing: 4px;
-      border: 1.5px solid rgba(192,133,82,0.35);
-      border-radius: 10px;
-      padding: 6px 10px;
-      width: 120px;
-      outline: none;
-      color: var(--text);
-      background: #FFF8F0;
+      font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 0.9rem;
+      letter-spacing: 4px; border: 1.5px solid rgba(192,133,82,0.35); border-radius: 10px;
+      padding: 6px 10px; width: 120px; outline: none; color: var(--text); background: #FFF8F0;
     }
     .del-input:focus { border-color: #C08552; }
     .del-confirm {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
       background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 6px 12px;
-      cursor: pointer;
+      color: white; border: none; border-radius: 10px; padding: 6px 12px; cursor: pointer;
     }
     .del-cancel {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
-      background: #f0f0f0;
-      color: #999;
-      border: none;
-      border-radius: 10px;
-      padding: 6px 10px;
-      cursor: pointer;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
+      background: #f0f0f0; color: #999; border: none; border-radius: 10px; padding: 6px 10px; cursor: pointer;
     }
 
     /* ── Mini-map ── */
-    .minimap-wrap {
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
-      margin-bottom: 14px;
-    }
-    .minimap {
-      width: 100%;
-      height: 200px;
-      border: 0;
-      display: block;
-    }
+    .minimap-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.12); margin-bottom: 14px; }
+    .minimap { width: 100%; height: 200px; border: 0; display: block; }
 
     /* ── Navigation buttons ── */
-    .nav-btns {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
+    .nav-btns { display: flex; gap: 8px; margin-top: 4px; }
     .nav-btn {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 12px 6px;
-      border-radius: 14px;
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 600;
-      font-size: 0.8rem;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px; padding: 12px 6px; border-radius: 14px;
+      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
+      text-decoration: none; border: none; cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
@@ -563,12 +498,7 @@
     .nav-btn.tmap  { background: #1a6cff; color: white; }
 
     /* ── Footer ── */
-    footer {
-      text-align: center;
-      padding: 20px 0 10px;
-      font-size: 0.8rem;
-      color: #8C5A3C;
-    }
+    footer { text-align: center; padding: 20px 0 10px; font-size: 0.8rem; color: #8C5A3C; }
     footer .emojis { font-size: 1.3rem; letter-spacing: 4px; display: block; margin-bottom: 4px; }
   </style>
 </head>
@@ -589,43 +519,35 @@
     <!-- ── HERO ── -->
     <section class="hero">
       <span class="hero-snake">🐍</span>
-      <div class="hero-tag">첫 번째 생일</div>
       <div class="hero-name">이현우</div>
-      <p class="hero-sub">의 <strong style="color:var(--lavender); font-weight:700;">돌잔치</strong>에 초대합니다</p>
       <div class="hero-birth">🍼 2025년 9월 30일생</div>
+      <p class="hero-hint">스크롤해서 현우의 1년을 만나보세요 ↓</p>
     </section>
 
-    <div class="divider">🌟 ☁️ 🌟</div>
+    <!-- ── TIMELINE ── -->
+    <div class="tl-section" id="tl-section">
+      <div class="tl-line"></div>
+      <!-- JS로 채워집니다 -->
+    </div>
 
-    <!-- ── COUNTDOWN ── -->
-    <div class="card">
-      <div class="card-title">⏰ D-DAY 카운트다운</div>
-      <div class="countdown-wrap">
-        <p class="countdown-title">돌잔치까지</p>
-        <div class="countdown-grid" id="countdown-grid">
-          <div class="countdown-item"><div class="countdown-num" id="cd-d">--</div><div class="countdown-label">일</div></div>
-          <div class="countdown-item"><div class="countdown-num" id="cd-h">--</div><div class="countdown-label">시간</div></div>
-          <div class="countdown-item"><div class="countdown-num" id="cd-m">--</div><div class="countdown-label">분</div></div>
-          <div class="countdown-item"><div class="countdown-num" id="cd-s">--</div><div class="countdown-label">초</div></div>
-        </div>
+    <!-- ── INVITE REVEAL ── -->
+    <div class="tl-invite" id="tl-invite">
+      <div class="tl-invite-title">
+        <span class="tl-invite-name">이현우</span>의<br>
+        <strong>돌잔치</strong>에 초대합니다 🎂
       </div>
-    </div>
-
-    <!-- ── INVITATION MESSAGE ── -->
-    <div class="card">
-      <div class="card-title">💌 초대의 말씀</div>
-      <p class="message">
-        작고 소중한 아이 <strong>이현우</strong>가<br>
-        세상에 태어난 지 어느덧 <strong>일 년</strong>이 되었습니다. 🎂<br><br>
-        이 특별한 날, 소중한 분들과 함께<br>
-        기쁨을 나누고 싶습니다.<br><br>
+      <p class="tl-invite-msg">
+        작고 소중한 아이가<br>
+        세상에 태어난 지 어느덧 <strong>일 년</strong>이 되었습니다.<br><br>
         바쁘시더라도 부디 참석하시어<br>
-        우리 아이의 돌을 <strong>함께 축하</strong>해 주세요. 🎈<br><br>
-        정성껏 준비하겠습니다 🙏
+        함께 <strong>축하</strong>해 주세요. 🎈
       </p>
+      <div class="tl-invite-date">📅 2026년 10월 3일 (토) 오전 11시 30분</div>
     </div>
 
-    <!-- ── EVENT INFO (calendar + location) ── -->
+    <div class="divider" style="margin-top:28px;">🌟 ☁️ 🌟</div>
+
+    <!-- ── EVENT INFO ── -->
     <div class="card">
       <div class="card-title">🎪 행사 안내</div>
       <div class="cal-month">2026년 10월</div>
@@ -641,7 +563,6 @@
           </div>
         </li>
       </ul>
-      <!-- 미니맵 -->
       <div class="minimap-wrap">
         <iframe
           class="minimap"
@@ -652,8 +573,6 @@
           allowfullscreen>
         </iframe>
       </div>
-
-      <!-- 지도 앱 연결 -->
       <div class="nav-btns">
         <a class="nav-btn naver" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener noreferrer">
           <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
@@ -683,11 +602,6 @@
     <div class="card" style="padding-bottom:20px;">
       <div class="card-title">📷 현우의 사진</div>
       <div class="slideshow-track" id="slideshow">
-        <!--
-          📌 사진 추가 방법:
-          <div class="slide"><img src="photos/파일명.jpg" alt="설명" /></div>
-          위 코드를 아래 placeholder 대신 넣어 주세요.
-        -->
         <div class="slide"><img src="photos/KakaoTalk_20251222_124953505.jpg" alt="현우 사진 1" /></div>
         <div class="slide"><img src="photos/KakaoTalk_20260529_162151553.jpg" alt="현우 사진 2" /></div>
         <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_01.jpg" alt="현우 사진 3" /></div>
@@ -704,8 +618,8 @@
       <div class="card-title">💬 축하 메시지</div>
       <div class="comment-list" id="comment-list"></div>
       <div class="gb-form" style="margin-top:20px;">
-        <input  class="gb-input" id="gb-name" type="text"  placeholder="이름을 입력해 주세요" maxlength="20" />
-        <textarea class="gb-input" id="gb-msg"  rows="3"   placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
+        <input class="gb-input" id="gb-name" type="text" placeholder="이름을 입력해 주세요" maxlength="20" />
+        <textarea class="gb-input" id="gb-msg" rows="3" placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
         <div class="gb-pin-wrap">
           <span class="pin-label">🔒 비밀번호 (삭제용)</span>
           <input class="gb-input gb-pin-input" id="gb-pin" type="password" inputmode="numeric"
@@ -723,16 +637,12 @@
   </div><!-- /page -->
 
   <script>
-    // ─── CANVAS PARTICLES (터치 반응) ─────────────────────────────────
+    // ─── CANVAS PARTICLES ────────────────────────────────────────────────
     const canvas = document.getElementById('bg-canvas');
     const ctx    = canvas.getContext('2d');
-    let bursts = [];
-    let floats = [];
+    let bursts = [], floats = [];
 
-    function resizeCanvas() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
@@ -740,25 +650,16 @@
 
     class BurstParticle {
       constructor(x, y) {
-        const a = Math.random() * Math.PI * 2;
-        const s = Math.random() * 6 + 2;
+        const a = Math.random() * Math.PI * 2, s = Math.random() * 6 + 2;
         this.x = x; this.y = y;
-        this.vx = Math.cos(a) * s;
-        this.vy = Math.sin(a) * s - 2;
-        this.life = 1;
-        this.decay = 0.018 + Math.random() * 0.014;
-        this.size  = Math.random() * 9 + 7;
+        this.vx = Math.cos(a) * s; this.vy = Math.sin(a) * s - 2;
+        this.life = 1; this.decay = 0.018 + Math.random() * 0.014;
+        this.size = Math.random() * 9 + 7;
         this.emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
       }
-      step() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += 0.2;
-        this.life -= this.decay;
-      }
+      step() { this.x += this.vx; this.y += this.vy; this.vy += 0.2; this.life -= this.decay; }
       draw() {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.save(); ctx.globalAlpha = Math.max(0, this.life);
         ctx.font = `${this.size * 2}px serif`;
         ctx.fillText(this.emoji, this.x - this.size, this.y + this.size);
         ctx.restore();
@@ -769,40 +670,25 @@
       constructor(init) {
         this.x = Math.random() * canvas.width;
         this.y = init ? Math.random() * canvas.height : canvas.height + 10;
-        this.vx = (Math.random() - 0.5) * 0.35;
-        this.vy = -(Math.random() * 0.55 + 0.2);
-        this.max = Math.random() * 0.45 + 0.2;
-        this.life = this.max;
+        this.vx = (Math.random() - 0.5) * 0.35; this.vy = -(Math.random() * 0.55 + 0.2);
+        this.max = Math.random() * 0.45 + 0.2; this.life = this.max;
         this.decay = 0.0018 + Math.random() * 0.0015;
-        this.r = Math.random() * 3.5 + 1.5;
-        this.hue = Math.random() * 30 + 20;
+        this.r = Math.random() * 3.5 + 1.5; this.hue = Math.random() * 30 + 20;
       }
       step() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= this.decay;
-        if (this.life <= 0) {
-          this.x = Math.random() * canvas.width;
-          this.y = canvas.height + 10;
-          this.life = this.max;
-        }
+        this.x += this.vx; this.y += this.vy; this.life -= this.decay;
+        if (this.life <= 0) { this.x = Math.random() * canvas.width; this.y = canvas.height + 10; this.life = this.max; }
       }
       draw() {
-        ctx.save();
-        ctx.globalAlpha = (this.life / this.max) * 0.45;
+        ctx.save(); ctx.globalAlpha = (this.life / this.max) * 0.45;
         ctx.fillStyle = `hsl(${this.hue},55%,80%)`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       }
     }
 
     for (let i = 0; i < 35; i++) floats.push(new FloatParticle(true));
-
-    function burst(x, y) {
-      for (let i = 0; i < 10; i++) bursts.push(new BurstParticle(x, y));
-    }
+    function burst(x, y) { for (let i = 0; i < 10; i++) bursts.push(new BurstParticle(x, y)); }
+    window.burst = burst;
 
     (function loop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -818,35 +704,92 @@
     }, { passive: true });
 
 
-    // ─── COUNTDOWN ────────────────────────────────────────────────────
-    const eventTime = new Date('2026-10-03T11:30:00+09:00');
+    // ─── TIMELINE ────────────────────────────────────────────────────────
+    (function buildTimeline() {
+      const MILESTONES = [
+        { label: '탄생',   sub: '세상에 첫 발걸음을 내딛다',   date: '2025.09.30', photo: null, emoji: '👶' },
+        { label: '1개월',  sub: '잠으로 하루가 가득',            photo: null, emoji: '😴' },
+        { label: '2개월',  sub: '눈을 맞추고 첫 미소가',         photo: null, emoji: '😊' },
+        { label: '3개월',  sub: '옹알이가 시작되다',              photo: 'photos/KakaoTalk_20251222_124953505.jpg' },
+        { label: '4개월',  sub: '뒤집기에 도전 중',               photo: null, emoji: '🌱' },
+        { label: '5개월',  sub: '손으로 잡는 재미를 발견',        photo: null, emoji: '🤲' },
+        { label: '6개월',  sub: '이유식의 시작',                  photo: null, emoji: '🥣' },
+        { label: '7개월',  sub: '배밀이로 세상을 탐험',           photo: null, emoji: '🐥' },
+        { label: '8개월',  sub: '앉아서 세상을 바라봐요',         photo: 'photos/KakaoTalk_20260529_162151553.jpg' },
+        { label: '9개월',  sub: '잡고 일어서기 도전',             photo: 'photos/KakaoTalk_20260529_162151553_01.jpg' },
+        { label: '10개월', sub: '첫 걸음마에 도전',               photo: 'photos/KakaoTalk_20260529_162151553_02.jpg' },
+        { label: '11개월', sub: '혼자 설 수 있어요',              photo: 'photos/KakaoTalk_20260529_162151553_03.jpg' },
+      ];
 
-    function tick() {
-      const diff = eventTime - new Date();
-      if (diff <= 0) {
-        document.getElementById('countdown-grid').innerHTML =
-          '<div class="countdown-done">🎉 오늘이 바로 그날입니다! 🎉</div>';
-        return;
-      }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
-      document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
-      document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
-      document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
-    }
-    tick();
-    setInterval(tick, 1000);
+      const section = document.getElementById('tl-section');
+
+      MILESTONES.forEach((m, i) => {
+        const isLeft = i % 2 === 0; // 짝수: 왼쪽 사진, 홀수: 오른쪽 사진
+        const item = document.createElement('div');
+        item.className = 'tl-item';
+
+        const mediaHTML = m.photo
+          ? `<div class="tl-photo"><img src="${m.photo}" alt="${m.label}" loading="lazy"/></div>`
+          : `<div class="tl-emoji-box">${m.emoji || '📸'}</div>`;
+
+        const infoHTML = `
+          <div class="tl-info${isLeft ? '' : ' r'}">
+            <div class="tl-badge">${m.label}</div>
+            <div class="tl-sub">${m.sub}</div>
+            ${m.date ? `<div class="tl-date-txt">${m.date}</div>` : ''}
+          </div>`;
+
+        if (isLeft) {
+          item.innerHTML = `
+            <div class="tl-half">${mediaHTML}</div>
+            <div class="tl-mid"><div class="tl-dot"></div></div>
+            <div class="tl-half">${infoHTML}</div>`;
+        } else {
+          item.innerHTML = `
+            <div class="tl-half">${infoHTML}</div>
+            <div class="tl-mid"><div class="tl-dot"></div></div>
+            <div class="tl-half">${mediaHTML}</div>`;
+        }
+
+        section.appendChild(item);
+      });
+
+      // 🎂 1살 — 피날레 (중앙 큰 사진)
+      const finale = document.createElement('div');
+      finale.className = 'tl-item tl-finale';
+      finale.innerHTML = `
+        <div class="tl-mid" style="width:100%;justify-content:center;margin-bottom:6px;">
+          <div class="tl-dot tl-dot-star"></div>
+        </div>
+        <div class="tl-finale-info">
+          <div class="tl-badge gold">🎂 1살</div>
+          <div class="tl-sub" style="margin-top:4px;">어느새 훌쩍 자랐어요</div>
+        </div>
+        <div class="tl-finale-photo">
+          <img src="photos/KakaoTalk_20260529_162151553_04.jpg" alt="1살" loading="lazy"/>
+        </div>`;
+      section.appendChild(finale);
+
+      // IntersectionObserver — 스크롤 시 페이드인
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            en.target.classList.add('tl-show');
+            io.unobserve(en.target);
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll('.tl-item, #tl-invite').forEach(el => io.observe(el));
+    })();
 
 
-    // ─── CALENDAR ─────────────────────────────────────────────────────
+    // ─── CALENDAR ────────────────────────────────────────────────────────
     (function buildCal() {
-      const YEAR = 2026, MONTH = 9; // Oct
+      const YEAR = 2026, MONTH = 9;
       const TARGET = 3;
       const LABELS = ['일','월','화','수','목','금','토'];
-      const firstDow = new Date(YEAR, MONTH, 1).getDay(); // 4 = Thu
+      const firstDow = new Date(YEAR, MONTH, 1).getDay();
       const totalDays = 31;
 
       const daysRow = document.getElementById('cal-days-row');
@@ -869,9 +812,9 @@
         const dow = (firstDow + d - 1) % 7;
         const el = document.createElement('div');
         el.className = 'cal-date' +
-          (d === TARGET  ? ' target' : '') +
-          (dow === 0     ? ' sun'    : '') +
-          (dow === 6     ? ' sat'    : '');
+          (d === TARGET ? ' target' : '') +
+          (dow === 0    ? ' sun'    : '') +
+          (dow === 6    ? ' sat'    : '');
         el.textContent = d;
         if (d === TARGET) {
           const star = document.createElement('span');
@@ -884,7 +827,7 @@
     })();
 
 
-    // ─── SLIDESHOW DOTS ───────────────────────────────────────────────
+    // ─── SLIDESHOW DOTS ──────────────────────────────────────────────────
     (function initSlideshow() {
       const track  = document.getElementById('slideshow');
       const dotsEl = document.getElementById('slide-dots');
@@ -913,7 +856,6 @@
     })();
 
 
-    // 댓글 입력창 Enter 키 처리
     document.getElementById('gb-name').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('gb-msg').focus();
     });
@@ -938,23 +880,17 @@
     const db  = getDatabase(app);
     const commentsRef = ref(db, 'dol_comments');
 
-    function esc(s) {
-      const el = document.createElement('div');
-      el.textContent = s;
-      return el.innerHTML;
-    }
+    function esc(s) { const el = document.createElement('div'); el.textContent = s; return el.innerHTML; }
     function fmt(ts) {
       const d = new Date(ts);
       return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    // PIN → SHA-256 해시 (평문 저장 방지)
     async function hashPin(pin) {
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    // pinHash를 DOM에 노출하지 않고 메모리에만 보관
     let _store = {};
 
     onValue(commentsRef, snapshot => {
@@ -992,20 +928,16 @@
       if (form.classList.contains('open')) document.getElementById('dp-' + key).focus();
     };
 
-    // pinHash는 _store(메모리)에서 조회 — HTML 소스에 노출되지 않음
     window.confirmDel = async function(key) {
       const c = _store[key];
       if (!c?.pinHash) return;
       const pin = (document.getElementById('dp-' + key)?.value || '').trim();
       if (!/^\d{4}$/.test(pin)) { alert('4자리 숫자를 입력해 주세요.'); return; }
       const hash = await hashPin(pin);
-      if (hash !== c.pinHash) {
-        alert('비밀번호가 틀렸습니다. 다시 확인해 주세요. 🔒'); return;
-      }
+      if (hash !== c.pinHash) { alert('비밀번호가 틀렸습니다. 다시 확인해 주세요. 🔒'); return; }
       await remove(ref(db, 'dol_comments/' + key));
     };
 
-    // 스팸 방지: 30초 내 재전송 차단
     const RATE_KEY = 'gb_last';
     window.submitComment = async function() {
       const now = Date.now();
