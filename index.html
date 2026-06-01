@@ -311,9 +311,10 @@
     }
     .tl-invite-name {
       font-family: 'Nanum Pen Script', cursive;
-      font-size: 2.4rem;
+      font-size: 3.6rem;
       color: #C08552;
       display: block;
+      line-height: 1.1;
     }
     .tl-invite-date {
       font-family: 'Pretendard', sans-serif;
@@ -353,8 +354,19 @@
       background: linear-gradient(135deg, #C08552, #8C5A3C);
       color: white !important;
       font-size: 0.95rem;
+      aspect-ratio: auto;
+      border-radius: 14px;
+      padding: 5px 2px;
+      gap: 1px;
       box-shadow: 0 4px 12px rgba(192,133,82,0.4);
       animation: pulse-cal 2s ease-in-out infinite;
+    }
+    .cal-time {
+      font-size: 0.5rem;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0.92;
     }
     @keyframes pulse-cal {
       0%,100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(192,133,82,0.4); }
@@ -402,27 +414,6 @@
       transition: transform 0.15s, box-shadow 0.15s;
     }
     .map-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(192,133,82,0.5); }
-
-    /* ── Slideshow ── */
-    .slideshow-track {
-      display: flex; overflow-x: scroll; scroll-snap-type: x mandatory;
-      scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
-      gap: 12px; padding: 4px 18px 12px; scrollbar-width: none; scroll-padding-inline: 18px;
-    }
-    .slideshow-track::-webkit-scrollbar { display: none; }
-    .slide {
-      scroll-snap-align: center; scroll-snap-stop: always; flex-shrink: 0;
-      width: calc(100% - 60px); border-radius: 20px; overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-    }
-    .slide img { width: 100%; height: 280px; object-fit: cover; display: block; }
-    .slide-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(192,133,82,0.3);
-      transition: all 0.3s; cursor: pointer; flex-shrink: 0;
-    }
-    .dot.active { background: #8C5A3C; width: 20px; border-radius: 4px; }
 
     /* ── Guestbook ── */
     .gb-form { display: flex; flex-direction: column; gap: 10px; }
@@ -521,7 +512,6 @@
       <span class="hero-snake">🐍</span>
       <div class="hero-name">이현우</div>
       <div class="hero-birth">🍼 2025년 9월 30일생</div>
-      <p class="hero-hint">스크롤해서 현우의 1년을 만나보세요 ↓</p>
     </section>
 
     <!-- ── TIMELINE ── -->
@@ -553,13 +543,11 @@
       <div class="cal-month">2026년 10월</div>
       <div id="cal-days-row" class="cal-days"></div>
       <div id="cal-dates-grid" class="cal-dates"></div>
-      <div class="cal-event-label">🎂 10월 3일 (토) 오전 11시 30분</div>
       <ul class="info-list">
         <li>
           <div class="info-icon">🏰</div>
           <div>
-            <span class="info-key">장소</span>
-            <span class="info-val">르미엘 (Le Miel)<br>광주 광산구 왕버들로 207</span>
+            <span class="info-val"><strong>르미엘 (Le Miel)</strong><br>광주 광산구 왕버들로 207</span>
           </div>
         </li>
       </ul>
@@ -596,21 +584,6 @@
           티맵
         </a>
       </div>
-    </div>
-
-    <!-- ── PHOTO SLIDESHOW ── -->
-    <div class="card" style="padding-bottom:20px;">
-      <div class="card-title">📷 현우의 사진</div>
-      <div class="slideshow-track" id="slideshow">
-        <div class="slide"><img src="photos/KakaoTalk_20251222_124953505.jpg" alt="현우 사진 1" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553.jpg" alt="현우 사진 2" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_01.jpg" alt="현우 사진 3" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_02.jpg" alt="현우 사진 4" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_03.jpg" alt="현우 사진 5" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_04.jpg" alt="현우 사진 6" /></div>
-        <div class="slide"><img src="photos/KakaoTalk_20260529_162151553_05.jpg" alt="현우 사진 7" /></div>
-      </div>
-      <div class="slide-dots" id="slide-dots"></div>
     </div>
 
     <!-- ── GUESTBOOK ── -->
@@ -758,15 +731,15 @@
       const finale = document.createElement('div');
       finale.className = 'tl-item tl-finale';
       finale.innerHTML = `
-        <div class="tl-mid" style="width:100%;justify-content:center;margin-bottom:6px;">
+        <div class="tl-mid" style="width:100%;justify-content:center;margin-bottom:10px;">
           <div class="tl-dot tl-dot-star"></div>
-        </div>
-        <div class="tl-finale-info">
-          <div class="tl-badge gold">🎂 1살</div>
-          <div class="tl-sub" style="margin-top:4px;">어느새 훌쩍 자랐어요</div>
         </div>
         <div class="tl-finale-photo">
           <img src="photos/KakaoTalk_20260529_162151553_04.jpg" alt="1살" loading="lazy"/>
+        </div>
+        <div class="tl-finale-info" style="margin-top:12px;">
+          <div class="tl-badge gold">🎂 1살</div>
+          <div class="tl-sub" style="margin-top:5px;">어느새 훌쩍 자랐어요</div>
         </div>`;
       section.appendChild(finale);
 
@@ -821,38 +794,13 @@
           star.className = 'cal-star';
           star.textContent = '✨';
           el.appendChild(star);
+          const time = document.createElement('span');
+          time.className = 'cal-time';
+          time.textContent = '11:30';
+          el.appendChild(time);
         }
         grid.appendChild(el);
       }
-    })();
-
-
-    // ─── SLIDESHOW DOTS ──────────────────────────────────────────────────
-    (function initSlideshow() {
-      const track  = document.getElementById('slideshow');
-      const dotsEl = document.getElementById('slide-dots');
-      const slides = Array.from(track.querySelectorAll('.slide'));
-
-      slides.forEach((_, i) => {
-        const dot = document.createElement('div');
-        dot.className = 'dot' + (i === 0 ? ' active' : '');
-        dot.addEventListener('click', () =>
-          slides[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-        );
-        dotsEl.appendChild(dot);
-      });
-
-      const dots = Array.from(dotsEl.querySelectorAll('.dot'));
-      const io = new IntersectionObserver(entries => {
-        entries.forEach(en => {
-          if (en.isIntersecting) {
-            const idx = slides.indexOf(en.target);
-            dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-          }
-        });
-      }, { root: track, threshold: 0.55 });
-
-      slides.forEach(s => io.observe(s));
     })();
 
 
