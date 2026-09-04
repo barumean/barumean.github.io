@@ -3,914 +3,773 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이현우의 돌잔치 🎂</title>
+  <title>이현우의 첫 번째 생일</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     /* ── Pretendard ── */
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2'); font-weight:500; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
     @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
-    @font-face { font-family:'Pretendard'; src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2'); font-weight:800; font-display:swap; }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --sky: #FFF8F0;
-      --mint: #FFF8F0;
-      --peach: #FFF8F0;
-      --yellow: #FFF8F0;
-      --lavender: #C08552;
-      --white: #ffffff;
-      --text: #4B2E2B;
-      --sub: #8C5A3C;
-      --gray: #C08552;
+      --bg:      #FFF8F0;
+      --ink:     #4B2E2B;
+      --sub:     #8C5A3C;
+      --accent:  #C08552;
+      --line:    rgba(140,90,60,0.16);
+      --line-2:  rgba(140,90,60,0.28);
+      --serif:   'Nanum Myeongjo', serif;
+      --sans:    'Pretendard', -apple-system, sans-serif;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Pretendard', sans-serif;
+      font-family: var(--sans);
       font-weight: 400;
-      background: linear-gradient(180deg, #FFF8F0 0%, #ffffff 50%, #FFF8F0 100%);
-      min-height: 100vh;
-      color: var(--text);
+      background: var(--bg);
+      color: var(--ink);
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.7;
     }
 
-    /* ── Canvas ── */
-    #bg-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+    #fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
-    /* ── Clouds ── */
-    .clouds { position: fixed; top: 0; left: 0; width: 100%; height: 200px; pointer-events: none; z-index: 0; overflow: hidden; }
-    .cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.8; animation: drift linear infinite; }
-    .cloud::before, .cloud::after { content: ''; position: absolute; background: white; border-radius: 50%; }
-    .cloud-1 { width: 120px; height: 40px; top: 30px; left: -150px; animation-duration: 28s; }
-    .cloud-1::before { width: 60px; height: 60px; top: -30px; left: 20px; }
-    .cloud-1::after  { width: 45px; height: 45px; top: -20px; left: 55px; }
-    .cloud-2 { width: 90px;  height: 30px; top: 70px; left: -120px; opacity: 0.6; animation-duration: 35s; animation-delay: 8s; }
-    .cloud-2::before { width: 45px; height: 45px; top: -22px; left: 15px; }
-    .cloud-2::after  { width: 35px; height: 35px; top: -15px; left: 42px; }
-    .cloud-3 { width: 140px; height: 45px; top: 15px; left: -170px; animation-duration: 42s; animation-delay: 18s; }
-    .cloud-3::before { width: 70px; height: 70px; top: -35px; left: 25px; }
-    .cloud-3::after  { width: 55px; height: 55px; top: -28px; left: 65px; }
-    @keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 200px)); } }
+    /* ═══════════════ REVEAL ═══════════════ */
+    .rv {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 1s cubic-bezier(.22,.61,.36,1), transform 1s cubic-bezier(.22,.61,.36,1);
+    }
+    .rv.on { opacity: 1; transform: none; }
+    .rv.d1 { transition-delay: .12s; }
+    .rv.d2 { transition-delay: .24s; }
+    .rv.d3 { transition-delay: .36s; }
 
-    /* ── Layout ── */
-    .page { position: relative; z-index: 2; max-width: 480px; margin: 0 auto; padding: 0 20px 80px; }
-
-    /* ── Ribbon ── */
-    .ribbon {
-      text-align: center;
-      font-size: 0.85rem;
-      color: white;
-      background: linear-gradient(90deg, #C08552, #8C5A3C);
-      padding: 10px;
-      letter-spacing: 2px;
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    /* ── Hero ── */
-    .hero { text-align: center; padding: 80px 0 24px; }
-    .hero-snake {
-      font-size: 5rem;
-      display: block;
-      animation: wiggle 2s ease-in-out infinite;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-    }
-    @keyframes wiggle {
-      0%, 100% { transform: rotate(-8deg) translateY(0); }
-      25%       { transform: rotate(0deg)  translateY(-8px); }
-      50%       { transform: rotate(8deg)  translateY(0); }
-      75%       { transform: rotate(0deg)  translateY(-8px); }
-    }
-    .hero-name {
-      font-family: 'Nanum Pen Script', cursive;
-      font-size: 3.8rem;
-      color: var(--text);
-      line-height: 1.1;
-      text-shadow: 2px 3px 0 rgba(192,133,82,0.3);
-      margin-top: 6px;
-    }
-    .hero-birth {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: white;
-      border-radius: 30px;
-      padding: 8px 20px;
-      margin-top: 14px;
-      font-size: 0.95rem;
-      color: var(--sub);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    }
-    .hero-hint {
-      margin-top: 20px;
-      font-size: 0.82rem;
-      color: rgba(192,133,82,0.7);
-      letter-spacing: 0.5px;
-      animation: hint-pulse 2s ease-in-out infinite;
-    }
-    @keyframes hint-pulse { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
-
-    /* ── Divider ── */
-    .divider { text-align: center; font-size: 1.4rem; margin: 4px 0 20px; letter-spacing: 6px; }
-
-    /* ── Card ── */
-    .card {
-      background: white;
-      border-radius: 28px;
-      padding: 28px 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 30px rgba(75,46,43,0.08);
+    /* ═══════════════ HERO ═══════════════ */
+    .hero {
       position: relative;
+      height: 100vh;
+      height: 100svh;
+      min-height: 560px;
       overflow: hidden;
-    }
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, #C08552, #8C5A3C);
-    }
-    .card-title {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 700;
-      font-size: 0.96rem;
-      color: var(--sub);
-      letter-spacing: 2px;
-      margin-bottom: 14px;
       display: flex;
-      align-items: center;
-      gap: 6px;
+      align-items: flex-end;
+      justify-content: center;
     }
-
-    /* ══════════════════════════════════════════
-       TIMELINE
-    ══════════════════════════════════════════ */
-    .tl-section {
-      position: relative;
-      padding: 0 0 20px;
+    .hero-img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scale(1.08);
+      animation: heroZoom 6s cubic-bezier(.22,.61,.36,1) forwards;
     }
-    .tl-line {
-      position: absolute;
-      left: 50%;
-      top: 0; bottom: 0;
-      width: 2px;
+    @keyframes heroZoom { to { transform: scale(1); } }
+    .hero-veil {
+      position: absolute; inset: 0;
       background: linear-gradient(
         180deg,
-        rgba(192,133,82,0.1) 0%,
-        #C08552 8%,
-        #8C5A3C 92%,
-        rgba(140,90,60,0.1) 100%
+        rgba(75,46,43,0.28) 0%,
+        rgba(75,46,43,0.08) 35%,
+        rgba(75,46,43,0.45) 78%,
+        rgba(75,46,43,0.68) 100%
       );
-      transform: translateX(-50%);
-      z-index: 0;
     }
-
-    .tl-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
+    .hero-body {
       position: relative;
-      z-index: 1;
-      opacity: 0;
-      transform: translateY(22px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
-    }
-    .tl-item.tl-show { opacity: 1; transform: translateY(0); }
-
-    /* Each side (photo or info) */
-    .tl-half { width: calc(50% - 22px); }
-
-    /* Center dot column */
-    .tl-mid {
-      width: 44px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-    }
-    .tl-dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      background: #C08552;
-      border: 3px solid white;
-      box-shadow: 0 0 0 2px #C08552;
-      flex-shrink: 0;
-    }
-    .tl-dot.tl-dot-star {
-      width: 18px; height: 18px;
-      background: #8C5A3C;
-      border: 3px solid white;
-      box-shadow: 0 0 0 2px #8C5A3C, 0 0 0 5px rgba(192,133,82,0.25);
-    }
-
-    /* Photo box */
-    .tl-photo {
+      text-align: center;
+      color: #fff;
+      padding: 0 24px 96px;
       width: 100%;
-      height: 155px;
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 5px 18px rgba(75,46,43,0.13);
     }
-    .tl-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    /* Emoji placeholder */
-    .tl-emoji-box {
-      width: 100%;
-      height: 155px;
-      background: rgba(192,133,82,0.07);
-      border: 1.5px dashed rgba(192,133,82,0.28);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.2rem;
+    .hero-label {
+      font-size: 0.64rem;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      opacity: 0.82;
+      margin-bottom: 20px;
+      font-weight: 500;
+      animation: fadeUp 1.2s .3s both cubic-bezier(.22,.61,.36,1);
     }
-
-    /* Info text */
-    .tl-info { }
-    .tl-info.r { text-align: right; }
-    .tl-badge {
-      display: inline-block;
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 700;
-      font-size: 0.88rem;
-      color: #C08552;
-      background: rgba(192,133,82,0.12);
-      padding: 3px 10px;
-      border-radius: 12px;
-      margin-bottom: 5px;
-    }
-    .tl-badge.gold {
-      background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white;
-      font-size: 1rem;
-      padding: 5px 14px;
-      border-radius: 16px;
-    }
-    .tl-sub {
-      font-family: 'Pretendard', sans-serif;
+    .hero-name {
+      font-family: var(--serif);
       font-weight: 400;
-      font-size: 0.76rem;
-      color: #8C5A3C;
-      line-height: 1.5;
+      font-size: 3.1rem;
+      letter-spacing: 0.14em;
+      line-height: 1.2;
+      text-indent: 0.14em;
+      animation: fadeUp 1.2s .5s both cubic-bezier(.22,.61,.36,1);
+    }
+    .hero-rule {
+      width: 34px; height: 1px;
+      background: rgba(255,255,255,0.55);
+      margin: 22px auto;
+      animation: fadeUp 1.2s .7s both cubic-bezier(.22,.61,.36,1);
+    }
+    .hero-date {
+      font-size: 0.78rem;
+      letter-spacing: 0.26em;
+      opacity: 0.9;
+      animation: fadeUp 1.2s .85s both cubic-bezier(.22,.61,.36,1);
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(18px);} to { opacity:1; transform:none;} }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: 34px; left: 50%;
+      transform: translateX(-50%);
+      width: 1px; height: 46px;
+      background: rgba(255,255,255,0.28);
+      overflow: hidden;
+    }
+    .hero-scroll::after {
+      content: '';
+      position: absolute; top: -46px; left: 0;
+      width: 1px; height: 46px;
+      background: rgba(255,255,255,0.9);
+      animation: scrollLine 2.2s ease-in-out infinite;
+    }
+    @keyframes scrollLine { 0%{transform:translateY(0);} 100%{transform:translateY(92px);} }
+
+    /* ═══════════════ LAYOUT ═══════════════ */
+    .wrap { max-width: 460px; margin: 0 auto; }
+    .sec { padding: 76px 30px; }
+    .sec-narrow { padding: 76px 34px; }
+
+    .label {
+      font-size: 0.62rem;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-align: center;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+    .title {
+      font-family: var(--serif);
+      font-weight: 400;
+      font-size: 1.42rem;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      text-align: center;
+      line-height: 1.65;
       word-break: keep-all;
     }
-    .tl-date-txt {
-      font-size: 0.67rem;
-      color: rgba(192,133,82,0.65);
-      margin-top: 3px;
-      font-family: 'Pretendard', sans-serif;
+    .rule {
+      width: 26px; height: 1px;
+      background: var(--line-2);
+      margin: 28px auto;
+    }
+    .body-txt {
+      font-size: 0.9rem;
+      color: var(--sub);
+      text-align: center;
+      line-height: 2.15;
+      word-break: keep-all;
+      font-weight: 400;
+    }
+    .body-txt em { font-style: normal; color: var(--ink); font-weight: 500; }
+
+    .divider-line { height: 1px; background: var(--line); margin: 0 30px; }
+
+    /* ═══════════════ GALLERY ═══════════════ */
+    .gal { padding: 60px 0 76px; }
+    .g-item { margin-bottom: 58px; }
+    .g-item:last-child { margin-bottom: 0; }
+
+    .g-frame { overflow: hidden; background: rgba(192,133,82,0.06); }
+    .g-frame img {
+      width: 100%; display: block;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      transform: scale(1.14);
+      transition: transform 1.6s cubic-bezier(.22,.61,.36,1);
+    }
+    .rv.on .g-frame img { transform: scale(1); }
+
+    .g-item.full .g-frame img { aspect-ratio: 3 / 4; }
+    .g-item.left  { padding-right: 62px; }
+    .g-item.right { padding-left: 62px; }
+
+    .g-cap {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 0 30px;
+    }
+    .g-item.left  .g-cap { padding-left: 30px; }
+    .g-item.right .g-cap { justify-content: flex-end; padding-right: 30px; }
+    .g-item.full  .g-cap { justify-content: center; }
+
+    .g-num {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+    .g-txt {
+      font-size: 0.76rem;
+      color: var(--sub);
+      letter-spacing: 0.04em;
+      word-break: keep-all;
     }
 
-    /* Special 1살 finale item */
-    .tl-finale {
+    /* ═══════════════ CALENDAR ═══════════════ */
+    .cal-head {
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      text-align: center;
+      color: var(--ink);
+      margin-bottom: 26px;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      row-gap: 4px;
+      text-align: center;
+    }
+    .cal-dow {
+      font-size: 0.6rem;
+      letter-spacing: 0.16em;
+      color: var(--sub);
+      opacity: 0.65;
+      padding-bottom: 12px;
+      font-weight: 500;
+    }
+    .cal-dow.s { color: #C0705A; opacity: 0.8; }
+    .cal-cell {
+      height: 46px;
+      display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 0;
+      justify-content: flex-start;
+      gap: 3px;
+      padding-top: 3px;
     }
-    .tl-finale-photo {
-      width: 100%;
-      max-width: 260px;
-      height: 220px;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 8px 28px rgba(75,46,43,0.18);
-    }
-    .tl-finale-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .tl-finale-info { text-align: center; }
-
-    /* ── Invite reveal ── */
-    .tl-invite {
-      text-align: center;
-      padding: 28px 16px 8px;
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-    }
-    .tl-invite.tl-show { opacity: 1; transform: translateY(0); }
-    .tl-invite-title {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 800;
-      font-size: 1.55rem;
-      color: #4B2E2B;
-      line-height: 1.4;
-      word-break: keep-all;
-      margin-bottom: 6px;
-    }
-    .tl-invite-name {
-      font-family: 'Nanum Pen Script', cursive;
-      font-size: 3.6rem;
-      color: #C08552;
-      display: block;
-      line-height: 1.1;
-    }
-    .tl-invite-date {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 500;
-      font-size: 0.9rem;
-      color: #8C5A3C;
-      margin-top: 10px;
-      letter-spacing: 0.5px;
-    }
-    .tl-invite-msg {
-      font-family: 'Pretendard', sans-serif;
-      font-weight: 400;
-      font-size: 0.9rem;
-      color: var(--sub);
-      margin-top: 10px;
-      line-height: 1.9;
-      word-break: keep-all;
-    }
-    .tl-invite-msg strong { color: var(--text); }
-
-    /* ── Calendar ── */
-    .cal-month { text-align: center; font-size: 1.1rem; color: var(--text); margin-bottom: 12px; }
-    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 2px; margin-bottom: 4px; }
-    .cal-day-label { font-size: 0.72rem; color: var(--sub); padding: 4px 0; }
-    .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
-    .cal-date {
-      aspect-ratio: 1;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      font-size: 0.85rem;
-      border-radius: 50%;
-      color: var(--text);
-      position: relative;
-    }
-    .cal-date.sun { color: #e88; }
-    .cal-date.sat { color: #C08552; }
-    .cal-date.target {
-      background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white !important;
-      font-size: 0.95rem;
-      aspect-ratio: auto;
-      border-radius: 14px;
-      padding: 5px 2px;
-      gap: 1px;
-      box-shadow: 0 4px 12px rgba(192,133,82,0.4);
-      animation: pulse-cal 2s ease-in-out infinite;
-    }
-    .cal-time {
-      font-size: 0.5rem;
-      font-weight: 600;
-      line-height: 1;
-      white-space: nowrap;
-      opacity: 0.92;
-    }
-    @keyframes pulse-cal {
-      0%,100% { transform: scale(1);    box-shadow: 0 4px 12px rgba(192,133,82,0.4); }
-      50%      { transform: scale(1.12); box-shadow: 0 6px 20px rgba(192,133,82,0.6); }
-    }
-    .cal-star { font-size: 0.45rem; position: absolute; top: -1px; right: 0; }
-    .cal-event-label {
-      text-align: center;
-      margin-top: 14px;
-      font-size: 0.88rem;
-      color: var(--sub);
-      background: #FFF8F0;
-      border-radius: 12px;
-      padding: 10px;
-    }
-
-    /* ── Info list ── */
-    .info-list { list-style: none; margin-top: 16px; }
-    .info-list li {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 10px 0;
-      border-bottom: 1px dashed rgba(192,133,82,0.25);
-      font-size: 0.95rem;
-    }
-    .info-list li:last-child { border-bottom: none; }
-    .info-icon {
-      font-size: 1.3rem; flex-shrink: 0;
-      width: 36px; height: 36px;
-      background: rgba(192,133,82,0.1);
-      border-radius: 50%;
+    .cal-n {
+      width: 30px; height: 30px;
       display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem;
+      color: var(--ink);
+      border-radius: 50%;
+      font-weight: 400;
     }
-    .info-key { font-size: 0.75rem; color: var(--sub); display: block; margin-bottom: 2px; }
-    .info-val { color: var(--text); line-height: 1.4; }
+    .cal-cell.sun .cal-n { color: #C0705A; }
+    .cal-cell.target .cal-n {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+    .cal-t {
+      font-size: 0.52rem;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      font-weight: 500;
+      line-height: 1;
+    }
+    .cal-foot {
+      text-align: center;
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      font-size: 0.82rem;
+      letter-spacing: 0.1em;
+      color: var(--sub);
+    }
 
-    /* ── Map button ── */
-    .map-btn {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+    /* ═══════════════ LOCATION ═══════════════ */
+    .loc-name {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      letter-spacing: 0.08em;
+      text-align: center;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .loc-addr {
+      text-align: center;
+      font-size: 0.83rem;
+      color: var(--sub);
+      letter-spacing: 0.02em;
+      margin-bottom: 26px;
+    }
+    .map-frame {
+      width: 100%; height: 210px;
+      border: 1px solid var(--line);
+      display: block;
+      filter: saturate(0.78) contrast(0.96);
+    }
+    .nav-row { display: flex; gap: 8px; margin-top: 14px; }
+    .nav-b {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 13px 4px;
+      border: 1px solid var(--line-2);
+      background: transparent;
+      font-family: var(--sans);
+      font-size: 0.74rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--sub);
+      text-decoration: none;
+      transition: background .25s, border-color .25s;
+    }
+    .nav-b:hover, .nav-b:active { background: rgba(192,133,82,0.07); border-color: var(--accent); }
+    .nav-b svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* ═══════════════ GUESTBOOK ═══════════════ */
+    .gb-list { display: flex; flex-direction: column; }
+    .gb-item { padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .gb-item:first-child { border-top: 1px solid var(--line); }
+    .gb-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+    .gb-who { font-size: 0.82rem; font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
+    .gb-when { font-size: 0.66rem; color: var(--sub); opacity: 0.6; letter-spacing: 0.06em; }
+    .gb-txt { font-size: 0.86rem; color: var(--sub); line-height: 1.9; word-break: keep-all; }
+    .gb-none { text-align: center; font-size: 0.82rem; color: var(--sub); opacity: 0.5; padding: 34px 0; letter-spacing: 0.04em; }
+
+    .gb-form { display: flex; flex-direction: column; gap: 0; margin-top: 34px; }
+    .fld {
+      font-family: var(--sans);
+      font-size: 0.86rem;
+      font-weight: 400;
+      border: none;
+      border-bottom: 1px solid var(--line-2);
+      background: transparent;
+      padding: 13px 2px;
+      outline: none;
+      color: var(--ink);
+      resize: none;
+      transition: border-color .25s;
       width: 100%;
-      background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white; border: none; border-radius: 18px; padding: 16px;
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 1rem;
-      cursor: pointer; text-decoration: none; margin-top: 16px;
-      box-shadow: 0 6px 20px rgba(192,133,82,0.35);
-      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .map-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(192,133,82,0.5); }
+    .fld::placeholder { color: var(--sub); opacity: 0.42; }
+    .fld:focus { border-bottom-color: var(--accent); }
 
-    /* ── Guestbook ── */
-    .gb-form { display: flex; flex-direction: column; gap: 10px; }
-    .gb-input {
-      font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 0.95rem;
-      border: 2px solid rgba(192,133,82,0.3); border-radius: 14px; padding: 12px 14px;
-      outline: none; color: var(--text); background: #FFF8F0;
-      transition: border-color 0.2s; resize: none;
-    }
-    .gb-input:focus { border-color: #C08552; }
-    .gb-btn {
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 1rem;
-      background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white; border: none; border-radius: 14px; padding: 14px; cursor: pointer;
-      box-shadow: 0 4px 14px rgba(192,133,82,0.4); transition: transform 0.15s;
-    }
-    .gb-btn:hover { transform: translateY(-1px); }
-    .comment-list { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .comment-item { background: #FFF8F0; border-radius: 16px; padding: 14px 16px; }
-    .comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .comment-name { font-size: 0.9rem; color: var(--text); }
-    .comment-time { font-size: 0.72rem; color: #bbb; }
-    .comment-msg { font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 1rem; color: var(--sub); line-height: 1.7; }
-    .no-comments { text-align: center; font-size: 0.9rem; color: #ccc; padding: 20px 0; }
+    .pin-row { display: flex; align-items: center; gap: 14px; padding-top: 4px; }
+    .pin-tag { font-size: 0.7rem; color: var(--sub); opacity: 0.7; white-space: nowrap; letter-spacing: 0.04em; }
+    .fld.pin { width: 104px; text-align: center; letter-spacing: 0.5em; text-indent: 0.5em; }
 
-    /* ── Delete / PIN ── */
-    .gb-pin-wrap { display: flex; align-items: center; gap: 10px; }
-    .pin-label { font-family: 'Pretendard', sans-serif; font-size: 0.83rem; color: var(--sub); white-space: nowrap; flex-shrink: 0; }
-    .gb-pin-input { width: 120px !important; text-align: center; letter-spacing: 6px; padding: 10px 8px !important; font-size: 1.05rem !important; }
-    .del-row { margin-top: 10px; }
-    .del-btn {
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.75rem;
-      background: none; border: 1px solid rgba(192,133,82,0.35); border-radius: 20px;
-      padding: 4px 10px; color: var(--sub); cursor: pointer; transition: background 0.15s;
+    .send-b {
+      margin-top: 26px;
+      width: 100%;
+      padding: 15px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      cursor: pointer;
+      transition: opacity .25s;
     }
-    .del-btn:hover { background: #FFF8F0; }
-    .del-form { display: none; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    .del-form.open { display: flex; }
-    .del-input {
-      font-family: 'Pretendard', sans-serif; font-weight: 400; font-size: 0.9rem;
-      letter-spacing: 4px; border: 1.5px solid rgba(192,133,82,0.35); border-radius: 10px;
-      padding: 6px 10px; width: 120px; outline: none; color: var(--text); background: #FFF8F0;
-    }
-    .del-input:focus { border-color: #C08552; }
-    .del-confirm {
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
-      background: linear-gradient(135deg, #C08552, #8C5A3C);
-      color: white; border: none; border-radius: 10px; padding: 6px 12px; cursor: pointer;
-    }
-    .del-cancel {
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
-      background: #f0f0f0; color: #999; border: none; border-radius: 10px; padding: 6px 10px; cursor: pointer;
-    }
+    .send-b:hover { opacity: 0.86; }
 
-    /* ── Mini-map ── */
-    .minimap-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.12); margin-bottom: 14px; }
-    .minimap { width: 100%; height: 200px; border: 0; display: block; }
-
-    /* ── Navigation buttons ── */
-    .nav-btns { display: flex; gap: 8px; margin-top: 4px; }
-    .nav-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 5px; padding: 12px 6px; border-radius: 14px;
-      font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 0.8rem;
-      text-decoration: none; border: none; cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    .del-b {
+      margin-top: 11px;
+      font-family: var(--sans);
+      font-size: 0.66rem;
+      letter-spacing: 0.06em;
+      background: none;
+      border: none;
+      color: var(--sub);
+      opacity: 0.55;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
-    .nav-btn:hover, .nav-btn:active { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
-    .nav-logo { width: 28px; height: 28px; display: block; }
-    .nav-btn.naver { background: #03c75a; color: white; }
-    .nav-btn.kakao { background: #fee500; color: #3c1e1e; }
-    .nav-btn.tmap  { background: #1a6cff; color: white; }
+    .del-b:hover { opacity: 1; }
+    .del-box { display: none; align-items: center; gap: 7px; margin-top: 11px; flex-wrap: wrap; }
+    .del-box.open { display: flex; }
+    .del-in {
+      font-family: var(--sans);
+      font-size: 0.76rem;
+      letter-spacing: 0.3em;
+      text-indent: 0.3em;
+      text-align: center;
+      border: none;
+      border-bottom: 1px solid var(--line-2);
+      background: transparent;
+      padding: 6px 2px;
+      width: 92px;
+      outline: none;
+      color: var(--ink);
+    }
+    .del-in:focus { border-bottom-color: var(--accent); }
+    .del-ok, .del-no {
+      font-family: var(--sans);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--line-2);
+      background: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      color: var(--sub);
+      transition: background .2s;
+    }
+    .del-ok { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .del-no:hover { background: rgba(192,133,82,0.07); }
 
-    /* ── Footer ── */
-    footer { text-align: center; padding: 20px 0 10px; font-size: 0.8rem; color: #8C5A3C; }
-    footer .emojis { font-size: 1.3rem; letter-spacing: 4px; display: block; margin-bottom: 4px; }
+    /* ═══════════════ FOOTER ═══════════════ */
+    .foot {
+      text-align: center;
+      padding: 62px 30px 74px;
+      border-top: 1px solid var(--line);
+      margin: 0 30px;
+    }
+    .foot-name {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      letter-spacing: 0.16em;
+      text-indent: 0.16em;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+    .foot-txt {
+      font-size: 0.76rem;
+      color: var(--sub);
+      opacity: 0.75;
+      letter-spacing: 0.06em;
+      line-height: 2;
+    }
   </style>
 </head>
 <body>
 
-  <canvas id="bg-canvas"></canvas>
+<canvas id="fx"></canvas>
 
-  <div class="clouds">
-    <div class="cloud cloud-1"></div>
-    <div class="cloud cloud-2"></div>
-    <div class="cloud cloud-3"></div>
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero">
+  <img class="hero-img" src="photos/KakaoTalk_20260529_162151553_04.jpg" alt="이현우" />
+  <div class="hero-veil"></div>
+  <div class="hero-body">
+    <p class="hero-label">First Birthday</p>
+    <h1 class="hero-name">이현우</h1>
+    <div class="hero-rule"></div>
+    <p class="hero-date">2026 . 10 . 03 &nbsp;SAT&nbsp; 11:30 AM</p>
   </div>
+  <div class="hero-scroll"></div>
+</header>
 
-  <div class="ribbon">🎈 이현우의 첫 번째 생일 🎈</div>
+<main class="wrap">
 
-  <div class="page">
+  <!-- ═══════════ INVITATION ═══════════ -->
+  <section class="sec sec-narrow">
+    <p class="label rv">Invitation</p>
+    <h2 class="title rv d1">
+      작은 씨앗이 자라<br>
+      첫 번째 계절을 맞았습니다
+    </h2>
+    <div class="rule rv d2"></div>
+    <p class="body-txt rv d2">
+      세상에 태어난 지 어느덧 <em>일 년</em>.<br>
+      매일이 처음이었고, 매일이 기적이었습니다.<br><br>
+      그 소중한 첫 걸음을<br>
+      귀한 걸음으로 함께해 주신다면<br>
+      더없는 기쁨이겠습니다.
+    </p>
+  </section>
 
-    <!-- ── HERO ── -->
-    <section class="hero">
-      <span class="hero-snake">🐍</span>
-      <div class="hero-name">이현우</div>
-      <div class="hero-birth">🍼 2025년 9월 30일생</div>
-    </section>
+  <div class="divider-line"></div>
 
-    <!-- ── TIMELINE ── -->
-    <div class="tl-section" id="tl-section">
-      <div class="tl-line"></div>
-      <!-- JS로 채워집니다 -->
+  <!-- ═══════════ GALLERY ═══════════ -->
+  <section class="gal">
+    <p class="label rv" style="margin-bottom:52px;">Our Little One</p>
+    <div id="gal"></div>
+  </section>
+
+  <div class="divider-line"></div>
+
+  <!-- ═══════════ CALENDAR ═══════════ -->
+  <section class="sec">
+    <p class="label rv">Calendar</p>
+    <div class="rv d1">
+      <p class="cal-head">2026 . OCTOBER</p>
+      <div class="cal-grid" id="cal"></div>
+      <p class="cal-foot">2026년 10월 3일 토요일 오전 11시 30분</p>
     </div>
+  </section>
 
-    <!-- ── INVITE REVEAL ── -->
-    <div class="tl-invite" id="tl-invite">
-      <div class="tl-invite-title">
-        <span class="tl-invite-name">이현우</span>의<br>
-        <strong>돌잔치</strong>에 초대합니다 🎂
-      </div>
-      <p class="tl-invite-msg">
-        작고 소중한 아이가<br>
-        세상에 태어난 지 어느덧 <strong>일 년</strong>이 되었습니다.<br><br>
-        바쁘시더라도 부디 참석하시어<br>
-        함께 <strong>축하</strong>해 주세요. 🎈
-      </p>
-      <div class="tl-invite-date">📅 2026년 10월 3일 (토) 오전 11시 30분</div>
-    </div>
+  <div class="divider-line"></div>
 
-    <div class="divider" style="margin-top:28px;">🌟 ☁️ 🌟</div>
-
-    <!-- ── EVENT INFO ── -->
-    <div class="card">
-      <div class="card-title">🎪 행사 안내</div>
-      <div class="cal-month">2026년 10월</div>
-      <div id="cal-days-row" class="cal-days"></div>
-      <div id="cal-dates-grid" class="cal-dates"></div>
-      <ul class="info-list">
-        <li>
-          <div class="info-icon">🏰</div>
-          <div>
-            <span class="info-val"><strong>르미엘 (Le Miel)</strong><br>광주 광산구 왕버들로 207</span>
-          </div>
-        </li>
-      </ul>
-      <div class="minimap-wrap">
-        <iframe
-          class="minimap"
-          src="https://maps.google.com/maps?q=광주+광산구+왕버들로+207+르미엘&output=embed&hl=ko&z=16"
-          loading="lazy"
-          title="르미엘 위치"
-          referrerpolicy="no-referrer-when-downgrade"
-          allowfullscreen>
-        </iframe>
-      </div>
-      <div class="nav-btns">
-        <a class="nav-btn naver" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener noreferrer">
-          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
-            <rect width="30" height="30" rx="7" fill="#03C75A"/>
-            <path d="M17.8 15.9L12.2 8H9v14h3.2V14.1l5.6 7.9H21V8h-3.2z" fill="white"/>
-          </svg>
+  <!-- ═══════════ LOCATION ═══════════ -->
+  <section class="sec">
+    <p class="label rv">Location</p>
+    <div class="rv d1">
+      <p class="loc-name">르미엘</p>
+      <p class="loc-addr">광주 광산구 왕버들로 207</p>
+      <iframe
+        class="map-frame"
+        src="https://maps.google.com/maps?q=광주+광산구+왕버들로+207+르미엘&output=embed&hl=ko&z=16"
+        loading="lazy" title="르미엘 위치"
+        referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+      <div class="nav-row">
+        <a class="nav-b" href="https://naver.me/Gz1D2A26" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 30 30"><rect width="30" height="30" rx="6" fill="#03C75A"/><path d="M17.8 15.9L12.2 8H9v14h3.2V14.1l5.6 7.9H21V8h-3.2z" fill="#fff"/></svg>
           네이버
         </a>
-        <a class="nav-btn kakao" href="https://kko.to/hOKeHXOQA9" target="_blank" rel="noopener noreferrer">
-          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
-            <rect width="30" height="30" rx="7" fill="#FEE500"/>
-            <path d="M15 5.5C9.2 5.5 4.5 9.25 4.5 13.9c0 2.95 1.88 5.55 4.72 7.1l-1.05 3.9 3.7-2.4c1 .2 2.05.3 3.13.3 5.8 0 10.5-3.75 10.5-8.4S20.8 5.5 15 5.5z" fill="#3C1E1E"/>
-          </svg>
+        <a class="nav-b" href="https://kko.to/hOKeHXOQA9" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 30 30"><rect width="30" height="30" rx="6" fill="#FEE500"/><path d="M15 5.5C9.2 5.5 4.5 9.25 4.5 13.9c0 2.95 1.88 5.55 4.72 7.1l-1.05 3.9 3.7-2.4c1 .2 2.05.3 3.13.3 5.8 0 10.5-3.75 10.5-8.4S20.8 5.5 15 5.5z" fill="#3C1E1E"/></svg>
           카카오
         </a>
-        <a class="nav-btn tmap" href="https://tmap.life/982b8579" target="_blank" rel="noopener noreferrer">
-          <svg class="nav-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">
-            <rect width="30" height="30" rx="7" fill="#1352FF"/>
-            <path d="M8 10h14v2.5h-5.5V22H14V12.5H8z" fill="white"/>
-          </svg>
+        <a class="nav-b" href="https://tmap.life/982b8579" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 30 30"><rect width="30" height="30" rx="6" fill="#1352FF"/><path d="M8 10h14v2.5h-5.5V22H14V12.5H8z" fill="#fff"/></svg>
           티맵
         </a>
       </div>
     </div>
+  </section>
 
-    <!-- ── GUESTBOOK ── -->
-    <div class="card">
-      <div class="card-title">💬 축하 메시지</div>
-      <div class="comment-list" id="comment-list"></div>
-      <div class="gb-form" style="margin-top:20px;">
-        <input class="gb-input" id="gb-name" type="text" placeholder="이름을 입력해 주세요" maxlength="20" />
-        <textarea class="gb-input" id="gb-msg" rows="3" placeholder="축하 메시지를 남겨주세요 🎉" maxlength="200"></textarea>
-        <div class="gb-pin-wrap">
-          <span class="pin-label">🔒 비밀번호 (삭제용)</span>
-          <input class="gb-input gb-pin-input" id="gb-pin" type="password" inputmode="numeric"
-                 placeholder="0000" maxlength="4" />
-        </div>
-        <button class="gb-btn" onclick="submitComment()">메시지 남기기 💌</button>
+  <div class="divider-line"></div>
+
+  <!-- ═══════════ GUESTBOOK ═══════════ -->
+  <section class="sec">
+    <p class="label rv">Guestbook</p>
+    <h2 class="title rv d1" style="font-size:1.15rem;">축하의 한마디</h2>
+    <div class="rule rv d1"></div>
+
+    <div class="gb-list rv d2" id="gb-list"></div>
+
+    <div class="gb-form rv d2">
+      <input class="fld" id="gb-name" type="text" placeholder="이름" maxlength="20" />
+      <textarea class="fld" id="gb-msg" rows="3" placeholder="축하 메시지를 남겨주세요" maxlength="200"></textarea>
+      <div class="pin-row">
+        <span class="pin-tag">삭제용 비밀번호</span>
+        <input class="fld pin" id="gb-pin" type="password" inputmode="numeric" placeholder="0000" maxlength="4" />
       </div>
+      <button class="send-b" onclick="submitComment()">MESSAGE 남기기</button>
     </div>
+  </section>
 
-    <footer>
-      <span class="emojis">🌸 🐣 🌈 🐍 🌸</span>
-      현우야, 생일 축하해! 사랑해 ♡
-    </footer>
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="foot rv">
+    <p class="foot-name">이현우</p>
+    <p class="foot-txt">
+      2025 . 09 . 30<br>
+      건강하게 자라주어 고맙습니다
+    </p>
+  </footer>
 
-  </div><!-- /page -->
+</main>
 
-  <script>
-    // ─── CANVAS PARTICLES ────────────────────────────────────────────────
-    const canvas = document.getElementById('bg-canvas');
-    const ctx    = canvas.getContext('2d');
-    let bursts = [], floats = [];
+<script>
+  /* ─── SCROLL REVEAL ─────────────────────────────────── */
+  const revealIO = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('on'); revealIO.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
 
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+  function observeReveals() {
+    document.querySelectorAll('.rv:not(.on)').forEach(el => revealIO.observe(el));
+  }
 
-    const EMOJIS = ['✨','⭐','🌟','💫','🎀','🌸','🎉','💕','🐣','🎊'];
+  /* ─── GALLERY ───────────────────────────────────────── */
+  (function buildGallery() {
+    const ITEMS = [
+      { src: 'photos/KakaoTalk_20251222_124953505.jpg',    n: '03', t: '옹알이가 시작되던 날',   lay: 'full'  },
+      { src: 'photos/KakaoTalk_20260529_162151553.jpg',    n: '08', t: '앉아서 세상을 바라봐요', lay: 'right' },
+      { src: 'photos/KakaoTalk_20260529_162151553_01.jpg', n: '09', t: '잡고 일어서기',         lay: 'left'  },
+      { src: 'photos/KakaoTalk_20260529_162151553_02.jpg', n: '10', t: '첫 걸음마',             lay: 'right' },
+      { src: 'photos/KakaoTalk_20260529_162151553_03.jpg', n: '11', t: '혼자 설 수 있어요',      lay: 'left'  },
+      { src: 'photos/KakaoTalk_20260529_162151553_05.jpg', n: '12', t: '어느새 훌쩍 자랐어요',   lay: 'full'  },
+    ];
 
-    class BurstParticle {
-      constructor(x, y) {
-        const a = Math.random() * Math.PI * 2, s = Math.random() * 6 + 2;
-        this.x = x; this.y = y;
-        this.vx = Math.cos(a) * s; this.vy = Math.sin(a) * s - 2;
-        this.life = 1; this.decay = 0.018 + Math.random() * 0.014;
-        this.size = Math.random() * 9 + 7;
-        this.emoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    const host = document.getElementById('gal');
+    host.innerHTML = ITEMS.map(it => `
+      <div class="g-item ${it.lay} rv">
+        <div class="g-frame"><img src="${it.src}" alt="${it.n}개월" loading="lazy" /></div>
+        <div class="g-cap">
+          <span class="g-num">${it.n}</span>
+          <span class="g-txt">${it.t}</span>
+        </div>
+      </div>`).join('');
+  })();
+
+  /* ─── CALENDAR ──────────────────────────────────────── */
+  (function buildCal() {
+    const YEAR = 2026, MONTH = 9, TARGET = 3;
+    const DOW = ['S','M','T','W','T','F','S'];
+    const firstDow = new Date(YEAR, MONTH, 1).getDay();
+    const total = new Date(YEAR, MONTH + 1, 0).getDate();
+    const cal = document.getElementById('cal');
+    let html = '';
+
+    DOW.forEach((d, i) => {
+      html += `<div class="cal-dow${i === 0 ? ' s' : ''}">${d}</div>`;
+    });
+    for (let i = 0; i < firstDow; i++) html += '<div class="cal-cell"></div>';
+    for (let d = 1; d <= total; d++) {
+      const dow = (firstDow + d - 1) % 7;
+      const isTarget = d === TARGET;
+      html += `<div class="cal-cell${isTarget ? ' target' : ''}${dow === 0 ? ' sun' : ''}">
+        <span class="cal-n">${d}</span>
+        ${isTarget ? '<span class="cal-t">11:30</span>' : ''}
+      </div>`;
+    }
+    cal.innerHTML = html;
+  })();
+
+  observeReveals();
+
+  /* ─── TAP RIPPLE ────────────────────────────────────── */
+  (function fx() {
+    const c = document.getElementById('fx'), x = c.getContext('2d');
+    let dots = [];
+    const fit = () => { c.width = innerWidth; c.height = innerHeight; };
+    fit(); addEventListener('resize', fit);
+
+    class Dot {
+      constructor(px, py) {
+        const a = Math.random() * Math.PI * 2, s = Math.random() * 2.6 + 0.6;
+        this.x = px; this.y = py;
+        this.vx = Math.cos(a) * s; this.vy = Math.sin(a) * s - 0.7;
+        this.r = Math.random() * 2.6 + 1.1;
+        this.life = 1; this.decay = 0.014 + Math.random() * 0.012;
       }
-      step() { this.x += this.vx; this.y += this.vy; this.vy += 0.2; this.life -= this.decay; }
+      step() { this.x += this.vx; this.y += this.vy; this.vy += 0.05; this.life -= this.decay; }
       draw() {
-        ctx.save(); ctx.globalAlpha = Math.max(0, this.life);
-        ctx.font = `${this.size * 2}px serif`;
-        ctx.fillText(this.emoji, this.x - this.size, this.y + this.size);
-        ctx.restore();
+        x.save();
+        x.globalAlpha = Math.max(0, this.life) * 0.5;
+        x.fillStyle = '#C08552';
+        x.beginPath(); x.arc(this.x, this.y, this.r, 0, Math.PI * 2); x.fill();
+        x.restore();
       }
     }
 
-    class FloatParticle {
-      constructor(init) {
-        this.x = Math.random() * canvas.width;
-        this.y = init ? Math.random() * canvas.height : canvas.height + 10;
-        this.vx = (Math.random() - 0.5) * 0.35; this.vy = -(Math.random() * 0.55 + 0.2);
-        this.max = Math.random() * 0.45 + 0.2; this.life = this.max;
-        this.decay = 0.0018 + Math.random() * 0.0015;
-        this.r = Math.random() * 3.5 + 1.5; this.hue = Math.random() * 30 + 20;
-      }
-      step() {
-        this.x += this.vx; this.y += this.vy; this.life -= this.decay;
-        if (this.life <= 0) { this.x = Math.random() * canvas.width; this.y = canvas.height + 10; this.life = this.max; }
-      }
-      draw() {
-        ctx.save(); ctx.globalAlpha = (this.life / this.max) * 0.45;
-        ctx.fillStyle = `hsl(${this.hue},55%,80%)`;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      }
-    }
-
-    for (let i = 0; i < 35; i++) floats.push(new FloatParticle(true));
-    function burst(x, y) { for (let i = 0; i < 10; i++) bursts.push(new BurstParticle(x, y)); }
-    window.burst = burst;
+    window.burst = (px, py) => { for (let i = 0; i < 9; i++) dots.push(new Dot(px, py)); };
 
     (function loop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      floats.forEach(p => { p.step(); p.draw(); });
-      bursts.forEach(p => { p.step(); p.draw(); });
-      bursts = bursts.filter(p => p.life > 0);
+      x.clearRect(0, 0, c.width, c.height);
+      dots.forEach(d => { d.step(); d.draw(); });
+      dots = dots.filter(d => d.life > 0);
       requestAnimationFrame(loop);
     })();
 
-    document.addEventListener('click', e => burst(e.clientX, e.clientY));
-    document.addEventListener('touchstart', e => {
-      [...e.touches].forEach(t => burst(t.clientX, t.clientY));
+    addEventListener('click', e => window.burst(e.clientX, e.clientY));
+    addEventListener('touchstart', e => {
+      [...e.touches].forEach(t => window.burst(t.clientX, t.clientY));
     }, { passive: true });
+  })();
 
+  document.getElementById('gb-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('gb-msg').focus();
+  });
 
-    // ─── TIMELINE ────────────────────────────────────────────────────────
-    (function buildTimeline() {
-      const MILESTONES = [
-        { label: '탄생',   sub: '세상에 첫 발걸음을 내딛다',   date: '2025.09.30', photo: null, emoji: '👶' },
-        { label: '1개월',  sub: '잠으로 하루가 가득',            photo: null, emoji: '😴' },
-        { label: '2개월',  sub: '눈을 맞추고 첫 미소가',         photo: null, emoji: '😊' },
-        { label: '3개월',  sub: '옹알이가 시작되다',              photo: 'photos/KakaoTalk_20251222_124953505.jpg' },
-        { label: '4개월',  sub: '뒤집기에 도전 중',               photo: null, emoji: '🌱' },
-        { label: '5개월',  sub: '손으로 잡는 재미를 발견',        photo: null, emoji: '🤲' },
-        { label: '6개월',  sub: '이유식의 시작',                  photo: null, emoji: '🥣' },
-        { label: '7개월',  sub: '배밀이로 세상을 탐험',           photo: null, emoji: '🐥' },
-        { label: '8개월',  sub: '앉아서 세상을 바라봐요',         photo: 'photos/KakaoTalk_20260529_162151553.jpg' },
-        { label: '9개월',  sub: '잡고 일어서기 도전',             photo: 'photos/KakaoTalk_20260529_162151553_01.jpg' },
-        { label: '10개월', sub: '첫 걸음마에 도전',               photo: 'photos/KakaoTalk_20260529_162151553_02.jpg' },
-        { label: '11개월', sub: '혼자 설 수 있어요',              photo: 'photos/KakaoTalk_20260529_162151553_03.jpg' },
-      ];
+  window.__observeReveals = observeReveals;
+</script>
 
-      const section = document.getElementById('tl-section');
+<!-- Firebase Realtime Database -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+  import { getDatabase, ref, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
 
-      MILESTONES.forEach((m, i) => {
-        const isLeft = i % 2 === 0; // 짝수: 왼쪽 사진, 홀수: 오른쪽 사진
-        const item = document.createElement('div');
-        item.className = 'tl-item';
+  const firebaseConfig = {
+    apiKey: "AIzaSyB95OpNaMR-Rf3o2yPGBbRyGUQ3gre49QU",
+    authDomain: "testserver-165b3.firebaseapp.com",
+    databaseURL: "https://testserver-165b3-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "testserver-165b3",
+    storageBucket: "testserver-165b3.firebasestorage.app",
+    messagingSenderId: "597691788836",
+    appId: "1:597691788836:web:b7251cbf1070b29c81f2b1"
+  };
 
-        const mediaHTML = m.photo
-          ? `<div class="tl-photo"><img src="${m.photo}" alt="${m.label}" loading="lazy"/></div>`
-          : `<div class="tl-emoji-box">${m.emoji || '📸'}</div>`;
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  const commentsRef = ref(db, 'dol_comments');
 
-        const infoHTML = `
-          <div class="tl-info${isLeft ? '' : ' r'}">
-            <div class="tl-badge">${m.label}</div>
-            <div class="tl-sub">${m.sub}</div>
-            ${m.date ? `<div class="tl-date-txt">${m.date}</div>` : ''}
-          </div>`;
+  function esc(s) { const el = document.createElement('div'); el.textContent = s; return el.innerHTML; }
+  function fmt(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
 
-        if (isLeft) {
-          item.innerHTML = `
-            <div class="tl-half">${mediaHTML}</div>
-            <div class="tl-mid"><div class="tl-dot"></div></div>
-            <div class="tl-half">${infoHTML}</div>`;
-        } else {
-          item.innerHTML = `
-            <div class="tl-half">${infoHTML}</div>
-            <div class="tl-mid"><div class="tl-dot"></div></div>
-            <div class="tl-half">${mediaHTML}</div>`;
-        }
+  async function hashPin(pin) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
 
-        section.appendChild(item);
-      });
+  // pinHash는 DOM에 노출하지 않고 메모리에만 보관
+  let _store = {};
 
-      // 🎂 1살 — 피날레 (중앙 큰 사진)
-      const finale = document.createElement('div');
-      finale.className = 'tl-item tl-finale';
-      finale.innerHTML = `
-        <div class="tl-mid" style="width:100%;justify-content:center;margin-bottom:10px;">
-          <div class="tl-dot tl-dot-star"></div>
-        </div>
-        <div class="tl-finale-photo">
-          <img src="photos/KakaoTalk_20260529_162151553_04.jpg" alt="1살" loading="lazy"/>
-        </div>
-        <div class="tl-finale-info" style="margin-top:12px;">
-          <div class="tl-badge gold">🎂 1살</div>
-          <div class="tl-sub" style="margin-top:5px;">어느새 훌쩍 자랐어요</div>
-        </div>`;
-      section.appendChild(finale);
-
-      // IntersectionObserver — 스크롤 시 페이드인
-      const io = new IntersectionObserver(entries => {
-        entries.forEach(en => {
-          if (en.isIntersecting) {
-            en.target.classList.add('tl-show');
-            io.unobserve(en.target);
-          }
-        });
-      }, { threshold: 0.12 });
-
-      document.querySelectorAll('.tl-item, #tl-invite').forEach(el => io.observe(el));
-    })();
-
-
-    // ─── CALENDAR ────────────────────────────────────────────────────────
-    (function buildCal() {
-      const YEAR = 2026, MONTH = 9;
-      const TARGET = 3;
-      const LABELS = ['일','월','화','수','목','금','토'];
-      const firstDow = new Date(YEAR, MONTH, 1).getDay();
-      const totalDays = 31;
-
-      const daysRow = document.getElementById('cal-days-row');
-      LABELS.forEach((lb, i) => {
-        const el = document.createElement('div');
-        el.className = 'cal-day-label';
-        el.textContent = lb;
-        if (i === 0) el.style.color = '#e88';
-        if (i === 6) el.style.color = '#C08552';
-        daysRow.appendChild(el);
-      });
-
-      const grid = document.getElementById('cal-dates-grid');
-      for (let i = 0; i < firstDow; i++) {
-        const blank = document.createElement('div');
-        blank.className = 'cal-date empty';
-        grid.appendChild(blank);
-      }
-      for (let d = 1; d <= totalDays; d++) {
-        const dow = (firstDow + d - 1) % 7;
-        const el = document.createElement('div');
-        el.className = 'cal-date' +
-          (d === TARGET ? ' target' : '') +
-          (dow === 0    ? ' sun'    : '') +
-          (dow === 6    ? ' sat'    : '');
-        el.textContent = d;
-        if (d === TARGET) {
-          const star = document.createElement('span');
-          star.className = 'cal-star';
-          star.textContent = '✨';
-          el.appendChild(star);
-          const time = document.createElement('span');
-          time.className = 'cal-time';
-          time.textContent = '11:30';
-          el.appendChild(time);
-        }
-        grid.appendChild(el);
-      }
-    })();
-
-
-    document.getElementById('gb-name').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('gb-msg').focus();
-    });
-  </script>
-
-  <!-- Firebase Realtime Database -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-    import { getDatabase, ref, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyB95OpNaMR-Rf3o2yPGBbRyGUQ3gre49QU",
-      authDomain: "testserver-165b3.firebaseapp.com",
-      databaseURL: "https://testserver-165b3-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "testserver-165b3",
-      storageBucket: "testserver-165b3.firebasestorage.app",
-      messagingSenderId: "597691788836",
-      appId: "1:597691788836:web:b7251cbf1070b29c81f2b1"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const commentsRef = ref(db, 'dol_comments');
-
-    function esc(s) { const el = document.createElement('div'); el.textContent = s; return el.innerHTML; }
-    function fmt(ts) {
-      const d = new Date(ts);
-      return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  onValue(commentsRef, snapshot => {
+    _store = snapshot.val() || {};
+    const list = document.getElementById('gb-list');
+    if (!Object.keys(_store).length) {
+      list.innerHTML = '<p class="gb-none">첫 번째 축하 메시지를 남겨주세요</p>';
+      return;
     }
-
-    async function hashPin(pin) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-
-    let _store = {};
-
-    onValue(commentsRef, snapshot => {
-      _store = snapshot.val() || {};
-      const list = document.getElementById('comment-list');
-      if (!Object.keys(_store).length) {
-        list.innerHTML = '<p class="no-comments">첫 번째 축하 메시지를 남겨주세요! 🎉</p>';
-        return;
-      }
-      const items = Object.entries(_store).sort((a, b) => b[1].time - a[1].time);
-      list.innerHTML = items.map(([key, c]) => `
-        <div class="comment-item">
-          <div class="comment-header">
-            <span class="comment-name">🌸 ${esc(c.name)}</span>
-            <span class="comment-time">${fmt(c.time)}</span>
-          </div>
-          <p class="comment-msg">${esc(c.msg)}</p>
-          ${c.pinHash ? `
-          <div class="del-row">
-            <button class="del-btn" onclick="toggleDel('${key}')">🗑️ 삭제</button>
-            <div class="del-form" id="df-${key}">
-              <input class="del-input" id="dp-${key}" type="password" inputmode="numeric"
-                     maxlength="4" placeholder="비밀번호 4자리" />
-              <button class="del-confirm" onclick="confirmDel('${key}')">확인</button>
-              <button class="del-cancel"  onclick="toggleDel('${key}')">취소</button>
-            </div>
-          </div>` : ''}
+    const items = Object.entries(_store).sort((a, b) => b[1].time - a[1].time);
+    list.innerHTML = items.map(([key, c]) => `
+      <div class="gb-item">
+        <div class="gb-top">
+          <span class="gb-who">${esc(c.name)}</span>
+          <span class="gb-when">${fmt(c.time)}</span>
         </div>
-      `).join('');
-    });
+        <p class="gb-txt">${esc(c.msg)}</p>
+        ${c.pinHash ? `
+        <button class="del-b" onclick="toggleDel('${key}')">삭제</button>
+        <div class="del-box" id="df-${key}">
+          <input class="del-in" id="dp-${key}" type="password" inputmode="numeric" maxlength="4" placeholder="0000" />
+          <button class="del-ok" onclick="confirmDel('${key}')">확인</button>
+          <button class="del-no" onclick="toggleDel('${key}')">취소</button>
+        </div>` : ''}
+      </div>
+    `).join('');
+  });
 
-    window.toggleDel = function(key) {
-      const form = document.getElementById('df-' + key);
-      form.classList.toggle('open');
-      if (form.classList.contains('open')) document.getElementById('dp-' + key).focus();
-    };
+  window.toggleDel = function(key) {
+    const form = document.getElementById('df-' + key);
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) document.getElementById('dp-' + key).focus();
+  };
 
-    window.confirmDel = async function(key) {
-      const c = _store[key];
-      if (!c?.pinHash) return;
-      const pin = (document.getElementById('dp-' + key)?.value || '').trim();
-      if (!/^\d{4}$/.test(pin)) { alert('4자리 숫자를 입력해 주세요.'); return; }
-      const hash = await hashPin(pin);
-      if (hash !== c.pinHash) { alert('비밀번호가 틀렸습니다. 다시 확인해 주세요. 🔒'); return; }
-      await remove(ref(db, 'dol_comments/' + key));
-    };
+  window.confirmDel = async function(key) {
+    const c = _store[key];
+    if (!c?.pinHash) return;
+    const pin = (document.getElementById('dp-' + key)?.value || '').trim();
+    if (!/^\d{4}$/.test(pin)) { alert('4자리 숫자를 입력해 주세요.'); return; }
+    const hash = await hashPin(pin);
+    if (hash !== c.pinHash) { alert('비밀번호가 일치하지 않습니다.'); return; }
+    await remove(ref(db, 'dol_comments/' + key));
+  };
 
-    const RATE_KEY = 'gb_last';
-    window.submitComment = async function() {
-      const now = Date.now();
-      const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
-      if (now - last < 30000) {
-        alert(`잠시 후 다시 시도해 주세요. (${Math.ceil((30000 - (now - last)) / 1000)}초 후)`);
-        return;
-      }
-      const name = document.getElementById('gb-name').value.trim();
-      const msg  = document.getElementById('gb-msg').value.trim();
-      const pin  = document.getElementById('gb-pin').value.trim();
-      if (!name || !msg)        { alert('이름과 메시지를 모두 입력해 주세요 😊'); return; }
-      if (!/^\d{4}$/.test(pin)) { alert('비밀번호는 숫자 4자리로 입력해 주세요 🔒'); return; }
-      try {
-        const pinHash = await hashPin(pin);
-        await push(commentsRef, { name, msg, pinHash, time: now });
-        localStorage.setItem(RATE_KEY, String(now));
-        document.getElementById('gb-name').value = '';
-        document.getElementById('gb-msg').value  = '';
-        document.getElementById('gb-pin').value  = '';
-        if (window.burst) window.burst(window.innerWidth / 2, window.innerHeight * 0.6);
-      } catch {
-        alert('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-      }
-    };
-  </script>
+  // 스팸 방지: 30초 내 재전송 차단
+  const RATE_KEY = 'gb_last';
+  window.submitComment = async function() {
+    const now = Date.now();
+    const last = parseInt(localStorage.getItem(RATE_KEY) || '0');
+    if (now - last < 30000) {
+      alert(`잠시 후 다시 시도해 주세요. (${Math.ceil((30000 - (now - last)) / 1000)}초 후)`);
+      return;
+    }
+    const name = document.getElementById('gb-name').value.trim();
+    const msg  = document.getElementById('gb-msg').value.trim();
+    const pin  = document.getElementById('gb-pin').value.trim();
+    if (!name || !msg)        { alert('이름과 메시지를 모두 입력해 주세요.'); return; }
+    if (!/^\d{4}$/.test(pin)) { alert('비밀번호는 숫자 4자리로 입력해 주세요.'); return; }
+    try {
+      const pinHash = await hashPin(pin);
+      await push(commentsRef, { name, msg, pinHash, time: now });
+      localStorage.setItem(RATE_KEY, String(now));
+      document.getElementById('gb-name').value = '';
+      document.getElementById('gb-msg').value  = '';
+      document.getElementById('gb-pin').value  = '';
+      if (window.burst) window.burst(innerWidth / 2, innerHeight * 0.6);
+    } catch {
+      alert('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    }
+  };
+</script>
 </body>
 </html>
