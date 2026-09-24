@@ -77,10 +77,13 @@ def cmd_team(a):
         must_idx.append(c)
     _log(f"[team] 카드 {len(cards)}장 · 상대 개체 {len(ids)} · 레플리카 싱글 팀 {len(teams)}개로 탐색")
     res = ts.search(must_idx, restarts=a.restarts, log=_log)
-    top = [list(t) for t, _ in res[:1]]
-    neigh = ts.neighbors(top[0], k=16)
+    # 재시작 결과 상위 3개 각각의 이웃(한 장 바꾼 팀)까지 후보로 — 한 재시작 결과에만 기대지 않는다
+    neigh = []
+    for t, _ in res[:3]:
+        neigh += ts.neighbors(list(t), k=8)
     # 탐색은 빠른 근사(순수전략 하한·상한 평균)로, 최종 후보는 혼합전략 균형값(정확)으로 다시 줄 세운다
-    cand = list(dict.fromkeys([t for t, _ in res] + [t for t, _ in neigh]))[:20]
+    pool = sorted(set([(t, v) for t, v in res] + neigh), key=lambda x: -x[1])
+    cand = list(dict.fromkeys(t for t, _ in pool))[:24]
     _log(f"[team] 후보 {len(cand)}팀을 혼합전략 균형값으로 재정렬…")
     cand = sorted(cand, key=lambda t: -ts.exact_score(t))[:10]
     p1, se = ts.bootstrap(cand)
@@ -89,7 +92,11 @@ def cmd_team(a):
     # 후보들은 멤버 대부분을 공유하므로 각자의 SE 가 아니라 같은 상대 표본에서의 차이로 판정해야 한다.
     top_t = rows[0][0]
     tie = [r for r in rows if r[0] == top_t or ts.paired_z(top_t, r[0]) < 2.0]
-    pick = min(tie, key=lambda r: (round(ts.gap(list(r[0])) * 100), -r[1]))   # 노출은 1%p 단위로만 구분
+    # 기본은 값이 가장 높은 팀. 동률 집단 안에 무답 노출이 그보다 1%p 이상 작은 팀이 있으면 그중 값이 가장 높은 팀.
+    # (예전 round() 규칙은 0.7%p 차이를 1%p 로 올려 1위 확률 61% 팀 대신 2% 팀을 골랐다)
+    top_r = max(tie, key=lambda r: r[1])
+    safer = [r for r in tie if ts.gap(list(r[0])) <= ts.gap(list(top_r[0])) - 0.01]
+    pick = max(safer, key=lambda r: r[1]) if safer else top_r
     L = []
     L.append(f"# 추천 파티 — 싱글 {D.SEASON.upper()} (op.gg 수집 {D.dir.name})\n")
     L.append(f"풀: {'싱글 순위 전 종' if a.pool is None else f'싱글 순위 상위 {a.pool}종'} ({len(sets)}종) · 상대 표본: 레플리카 싱글 팀 {len(teams)}개 · 카드 {len(cards)}장\n")
@@ -317,7 +324,7 @@ def cmd_pick(a):
     L.append(f"## 선봉: **{D.name(mine[r['lead']].form)}**\n")
     if len(r["mix"]) > 1:
         L.append("선출 혼합(균형에서 각 조합을 낼 비율 — 한 조합만 고집하면 읽힌다): "
-                 + " · ".join(f"{nm(t, 0)} {p * 100:.0f}%" for t, p in r["mix"]))
+                 + " · ".join(f"{nm(t, 0)} (선봉 {D.name(mine[ld].form)}) {p * 100:.0f}%" for t, p, ld in r["mix"]))
     L.append("상대 선출 예상(균형): " + " · ".join(f"{nm(t, 1)} {p * 100:.0f}%" for t, p in r["their_mix"]))
     L.append("보장값 기준 차선: " + " · ".join(f"{nm(t, 0)} ({v:+.3f})" for t, v in r["alts"]) + "\n")
     hdr = ["상대 ↓ / 나 →"] + [D.name(b.form) for b in mine] + ["최선의 답"]

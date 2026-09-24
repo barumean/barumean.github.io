@@ -106,25 +106,29 @@ class TeamSearch:
             if len(team) < 6:
                 continue
             cur = self.score(team)
-            improved = True
-            while improved:
-                improved = False
-                for pos in range(6):
-                    if team[pos] in must:
-                        continue
-                    for c in range(C):
-                        if c in team:
+            while True:
+                improved = True
+                while improved:
+                    improved = False
+                    for pos in range(6):
+                        if team[pos] in must:
                             continue
-                        trial = team[:pos] + [c] + team[pos + 1:]
-                        if not self.valid(trial):
-                            continue
-                        v = self.score(trial)
-                        if v > cur + 1e-7:
-                            team, cur, improved = trial, v, True
-            # 한 장 바꾸기로는 못 가는 '두 마리 도구 맞바꾸기'(아이템 클로즈 충돌 해소): 같은 6종의 도구 변형 전부
-            t2, v2 = self.reassign_items(team)
-            if v2 > cur + 1e-7:
-                team, cur = t2, v2
+                        for c in range(C):
+                            if c in team:
+                                continue
+                            trial = team[:pos] + [c] + team[pos + 1:]
+                            if not self.valid(trial):
+                                continue
+                            v = self.score(trial)
+                            if v > cur + 1e-7:
+                                team, cur, improved = trial, v, True
+                # 한 장 바꾸기로는 못 가는 '두 마리 도구 맞바꾸기'(아이템 클로즈 충돌 해소): 같은 6종의 도구 변형 전부.
+                # 바뀌면 그 팀에서 한 장 바꾸기를 다시 돈다(개선이 없을 때까지)
+                t2, v2 = self.reassign_items(team)
+                if v2 > cur + 1e-7:
+                    team, cur = t2, v2
+                    continue
+                break
             results[tuple(sorted(team))] = cur
             if log:
                 log(f"  재시작 {r + 1}/{restarts}: {cur:+.4f}")

@@ -213,7 +213,8 @@ function analyze(){
   const score = i => 0.5 * V[i].reduce((a, v, j) => a + v * freq[j], 0) + 0.5 * Math.min(...lik.map(j => V[i][j]));
   const pos = best.slice().sort((a, b) => score(b) - score(a));      // ① 선봉 = 상대 선출 가능성으로 가중한 평균·최악 반반이 가장 높은 쪽
   const safe = Math.max(...P.map(r => Math.min(...r)));
-  const mix = order.filter(k => g.x[k] > 0.01).map(k => ({t: A[k], p: g.x[k]}));
+  // 혼합의 각 조합마다 선봉(같은 규칙): 2순위 조합을 낼 때도 누가 먼저인지
+  const mix = order.filter(k => g.x[k] > 0.01).map(k => ({t: A[k], p: g.x[k], lead: A[k].reduce((b, i) => score(i) > score(b) ? i : b, A[k][0])}));
   const their = B.map((b, k) => ({t: b, p: g.y[k]})).filter(r => r.p > 0.01).sort((a, b) => b.p - a.p);
   return {V, pos, v: g.v, safe, mix, their, freq};
 }
@@ -281,7 +282,7 @@ function renderResult(){
     return `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span>
       <span class="sub">${esc(ME[i].item)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span></div>`;
   }).join("");
-  const mix = r.mix.length > 1 ? `<div class="block"><h2>선출 비율 (균형)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))}<div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
+  const mix = r.mix.length > 1 ? `<div class="block"><h2>선출 비율 (균형)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))} <span class="muted">· 선봉 ${esc(name(x.lead))}</span><div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
     <p class="legend">한 조합만 고집하면 읽힙니다. 1순위가 위 카드입니다.</p></div>` : "";
   const their = `<div class="block"><h2>상대가 낼 3마리 (예상)</h2><div class="mix">${r.their.slice(0,3).map(x => `<div class="row"><div>${esc(x.t.map(oname).join(' / '))}<div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div></div>`;
   const lead = r.pos[0];

@@ -72,10 +72,15 @@ def advise(D, mine, opp_keys, mega_known=None, mc=0):
             freq[j] += y[k]
     freq /= max(1e-9, freq.sum())
     # 선봉: 고른 3마리 중, 상대가 낼 확률로 가중한 평균과 상대 선출 후보 중 최악을 반반
-    lead_scores = [(i, 0.5 * float((V[i] * freq).sum()) + 0.5 * float(V[i][freq > 0.05].min())) for i in best]
+    def lead_score(i):
+        return 0.5 * float((V[i] * freq).sum()) + 0.5 * float(V[i][freq > 0.05].min())
+
+    lead_scores = [(i, lead_score(i)) for i in best]
     lead = max(lead_scores, key=lambda x: x[1])[0]
+    # 혼합의 각 조합마다 선봉(같은 규칙) — 2순위 조합을 낼 때도 누가 먼저인지 알 수 있게
+    lead_of = lambda t: max(t, key=lead_score)
     return {"V": V, "opp": opp, "best": best, "best_value": float(val), "safe_value": float(P.min(axis=1).max()),
-            "mix": [(my_tri[k], float(x[k])) for k in order if x[k] > 0.01],
+            "mix": [(my_tri[k], float(x[k]), lead_of(my_tri[k])) for k in order if x[k] > 0.01],
             "their_mix": [(op_tri[k], float(y[k])) for k in their_order if y[k] > 0.01],
             "alts": [(my_tri[k], float(P[k].min())) for k in np.argsort(-P.min(axis=1))[:4] if my_tri[k] != best][:3],
             "their_likely": likely, "their_freq": freq, "lead": lead, "lead_scores": lead_scores}

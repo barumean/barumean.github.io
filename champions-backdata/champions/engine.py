@@ -51,7 +51,7 @@ _NI = {"atk": 1, "def": 2, "spa": 3, "spd": 4, "spe": 5}
 
 # ── 특성·도구 표 (챔피언스에 있는 것만) ──────────────────────────
 SKIN = {"aerilate": "flying", "pixilate": "fairy", "refrigerate": "ice", "galvanize": "electric", "dragonize": "dragon"}
-IMMUNE_AB = {"levitate": "ground", "earth-eater": "ground", "flash-fire": "fire", "well-baked-body": "fire",
+IMMUNE_AB = {"levitate": "ground", "eelevate": "ground", "earth-eater": "ground", "flash-fire": "fire", "well-baked-body": "fire",
              "water-absorb": "water", "storm-drain": "water", "dry-skin": "water", "volt-absorb": "electric",
              "lightning-rod": "electric", "motor-drive": "electric", "sap-sipper": "grass"}
 TRAIT_BOOST = {"tough-claws": ("contact", 1.3), "iron-fist": ("punch", 1.2), "strong-jaw": ("bite", 1.5),
@@ -85,8 +85,8 @@ FIXED_DMG = {"seismic-toss": 50, "night-shade": 50}
 HIT_POWER = {"triple-axel": 6, "triple-kick": 6}  # 20+40+60 = 1타 위력 × 6
 SPECIAL_VS_DEF = {"psyshock", "psystrike", "secret-sword"}
 ALWAYS_CRIT = {"flower-trick", "wicked-blow", "surging-strikes", "storm-throw", "frost-breath", "zippy-zap"}
-NO_VALUE = {"protect", "detect", "kings-shield", "spiky-shield", "baneful-bunker", "silk-trap", "burning-bulwark",
-            "endure", "substitute", "stealth-rock", "spikes", "toxic-spikes", "sticky-web", "taunt", "encore",
+PROTECT = {"protect", "detect", "kings-shield", "spiky-shield", "baneful-bunker", "silk-trap", "burning-bulwark"}
+NO_VALUE = {"endure", "substitute", "stealth-rock", "spikes", "toxic-spikes", "sticky-web", "taunt", "encore",
             "trick-room", "tailwind", "light-screen", "reflect", "aurora-veil", "helping-hand", "follow-me",
             "rage-powder", "u-turn-status", "baton-pass", "trick", "switcheroo", "yawn", "perish-song", "destiny-bond",
             "sleep-talk", "rain-dance", "sunny-day", "sandstorm", "snowscape", "psychic-terrain", "grassy-terrain",
@@ -95,10 +95,12 @@ NO_VALUE = {"protect", "detect", "kings-shield", "spiky-shield", "baneful-bunker
 
 
 def classify(mv):
-    """기술 → 'attack' | 'setup' | 'status' | 'heal' | 'phaze' | 'none'"""
+    """기술 → 'attack' | 'setup' | 'status' | 'heal' | 'phaze' | 'protect' | 'none'"""
     k = mv["key"]
     if k in SUICIDE:
         return "none"
+    if k in PROTECT:
+        return "protect"
     if k in PHAZE:
         return "phaze" if mv["cat"] == "status" else "attack"
     if mv["cat"] != "status":
@@ -171,7 +173,8 @@ def calc_stats(base, sp, nature):
 class Side:
     __slots__ = ("b", "maxhp", "hp", "boost", "status", "tox", "sleep", "item", "disguise", "locked", "charging",
                  "recharge", "blade", "sitrus", "heals", "seeded", "turn", "plan_left", "status_done", "stats",
-                 "types", "ability", "flinch", "air", "pp", "bound", "bind_frac", "rng", "protean_used")
+                 "types", "ability", "flinch", "air", "pp", "bound", "bind_frac", "rng", "protean_used",
+                 "charged", "protected", "protect_last", "wish", "cprob", "shed")
 
     def __init__(self, b, hpfrac=1.0):
         self.b = b
@@ -203,6 +206,12 @@ class Side:
         self.bind_frac = 0.125
         self.rng = None
         self.protean_used = False
+        self.charged = False       # 전기로바꾸기: 맞으면 충전 → 다음 전기 기술 ×2
+        self.protected = False     # 이번 턴 방어 중
+        self.protect_last = False  # 직전 턴에 방어했나(연속 사용 금지)
+        self.wish = 0              # 희망사항: 남은 턴(0 이 되는 턴 끝에 최대 HP 1/2 회복)
+        self.cprob = 0.0           # 접촉 상태이상(정전기 등) 누적 확률 — 기대값 모드용
+        self.shed = 0.0            # 탈피 누적 확률 — 기대값 모드용
 
     def st(self, i, ignore_boost=False):
         s = (self.b.blade if (self.blade and self.b.blade and i in (1, 2, 3, 4)) else self.stats)[i]
@@ -221,7 +230,13 @@ class Field:
 
 
 def grounded(s):
-    return "flying" not in s.types and s.ability != "levitate" and not s.air
+    return "flying" not in s.types and s.ability not in ("levitate", "eelevate") and not s.air
+
+
+# 기술 '계열'(타입이 아니라 성질)을 무효화하는 특성: 방탄 = 구슬·폭탄, 방음 = 소리
+TRAIT_IMMUNE = {"bulletproof": "ball-bomb", "soundproof": "sound"}
+# 접촉하면 30% 로 공격한 쪽에 상태이상
+CONTACT_STATUS = {"static": "par", "flame-body": "brn", "poison-point": "psn"}
 
 
 def weather_for(field, att):
@@ -276,6 +291,8 @@ def damage(att, dfd, mv, field, first_hit_check=True):
         eff = type_eff(t, [x for x in dfd.types if x != "ghost"])
     if IMMUNE_AB.get(dab) == t or (t == "ground" and dfd.air):
         return 0.0
+    if TRAIT_IMMUNE.get(dab) in mv["traits"]:
+        return 0.0                                       # 방탄·방음
     if eff == 0:
         return 0.0
     if k in FIXED_DMG:
@@ -296,6 +313,8 @@ def damage(att, dfd, mv, field, first_hit_check=True):
     if k in ("hex", "venoshock", "infernal-parade") and dfd.status:
         pw *= 2
     if k == "facade" and att.status:
+        pw *= 2
+    if att.charged and t == "electric":              # 전기로바꾸기(충전) 상태
         pw *= 2
     if att.ability == "technician" and pw <= 60:
         pw *= 1.5
@@ -385,6 +404,10 @@ def damage(att, dfd, mv, field, first_hit_check=True):
         d *= (0.5 if "contact" in mv["traits"] else 1) * (2 if t == "fire" else 1)
     if dab == "ice-scales" and cat == "special":
         d *= 0.5
+    if dab == "grass-pelt" and t == "grass":
+        d *= 0.5                                         # 풀모피(챔피언스 설명: 풀 기술 반감)
+    if dab == "aura-guard" and cat == "physical" and "contact" in mv["traits"]:
+        d *= 0.5                                         # 파동의방호: 접촉 물리 반감
     if dab == "dry-skin" and t == "fire":
         d *= 1.25
     if dab in ("multiscale", "shadow-shield") and dfd.hp >= dfd.maxhp:
@@ -524,6 +547,8 @@ def _status_ok(s, o, mv, field):
     k = mv["key"]
     if o.ability in ("good-as-gold", "magic-bounce"):
         return False
+    if TRAIT_IMMUNE.get(o.ability) in mv["traits"] and s.ability not in ("mold-breaker", "teravolt", "turboblaze"):
+        return False                                     # 방음(노래하기 등)·방탄
     if ail == "leech-seed":
         return not o.seeded and "grass" not in o.types
     if o.status:
@@ -582,14 +607,32 @@ def choose(s, o, field, plan):
         # 다음 한 대를 못 버틸 때만 회복한다(버틸 수 있으면 때리는 게 낫다 — 더시마사리식 회복·엉겨붙기 교대).
         hp_at_act = s.hp - (opp_d if slower else 0.0)
         margin = hp_at_act + (regen if slower else 0.0) - opp_d
-        if hp_at_act > 0 and margin <= 0:
-            for k in s.b.moves:
-                if s.b.kinds[k] == "heal" and s.pp.get(k, 0) > 0:
-                    mv = D.MOVES[k]
-                    frac_heal = s.maxhp * _heal_frac(mv, field)
-                    # 회복해야 다음 한 대를 버틸 수 있고, 최대 회복량이 상대 한 턴 피해를 따라잡을 때
-                    if frac_heal + regen > opp_d and margin + min(frac_heal, s.maxhp - hp_at_act) > 0:
-                        return ("move", mv)
+        prot = next((k for k in s.b.moves if s.b.kinds[k] == "protect" and s.pp.get(k, 0) > 0), None)
+        # 희망사항이 이번 턴 끝에 들어오면 방어로 한 턴 버틴다(희망사항 → 방어)
+        if s.wish == 1 and prot and not s.protect_last:
+            return ("move", D.MOVES[prot])
+        sustain = kind == "atk" and pm == "sustain"
+        # 버티기 계획: 상대가 턴마다 깎이면(맹독·화상·씨뿌리기·속박) 방어로 한 턴 더 깎는다
+        residual = o.status in ("tox", "brn", "psn") or o.seeded or o.bound
+        if sustain and prot and not s.protect_last and residual and o.ability != "magic-guard":
+            return ("move", D.MOVES[prot])
+        for k in s.b.moves:
+            if s.b.kinds[k] != "heal" or s.pp.get(k, 0) <= 0 or hp_at_act <= 0:
+                continue
+            mv = D.MOVES[k]
+            frac_heal = s.maxhp * _heal_frac(mv, field)
+            if k == "wish":
+                # 희망사항은 한 턴 늦게 들어온다: 다음 턴을 방어로 버틸 수 있거나 그냥 버틸 수 있을 때, 두 대 안에 위험하면
+                if not s.wish and hp_at_act <= 2 * opp_d and (prot or margin > 0):
+                    return ("move", mv)
+                continue
+            if sustain:
+                # 버티기 계획: 회복량을 거의 다 쓸 만큼 깎였으면 미리 회복(회복 먼저, 공격은 나중에)
+                if s.maxhp - hp_at_act >= 0.9 * frac_heal and frac_heal + regen > 0.5 * opp_d:
+                    return ("move", mv)
+            elif margin <= 0 and frac_heal + regen > opp_d and margin + min(frac_heal, s.maxhp - hp_at_act) > 0:
+                # 기본: 다음 한 대를 못 버틸 때만, 회복이 상대 한 턴 피해를 따라잡을 때
+                return ("move", mv)
     # 계획
     if kind == "setup" and s.plan_left > 0 and not s.locked and s.pp.get(pm, 0) > 0:
         return ("move", D.MOVES[pm])
@@ -644,10 +687,38 @@ def _take(s, d, field, hits=1):
     d = min(d, s.hp)
     s.hp -= d
     if s.sitrus and 0 < s.hp <= s.maxhp / 2:
-        s.hp += s.maxhp / 4
+        s.hp += s.maxhp / 4 + (s.maxhp / 3 if s.ability == "cheek-pouch" else 0)   # 볼주머니: 열매 먹으면 1/3 추가
         s.sitrus = False
         s.item = None
     return d
+
+
+def _contact_reaction(s, o):
+    """o 의 특성이 접촉한 s 에게 주는 효과.
+    미끈미끈: 스피드 −1. 정전기·불꽃몸·독가시: 30% 상태이상 — 확률 모드는 30% 로 뽑고,
+    기대값 모드는 누적 확률 1−0.7ⁿ 이 0.5 를 넘는 순간(=두 번째 접촉)에 건다."""
+    ab = o.ability
+    if ab == "gooey" and s.ability not in ("clear-body", "white-smoke", "full-metal-body", "mirror-armor"):
+        s.boost[5] = max(-6, s.boost[5] - 1)
+    st = CONTACT_STATUS.get(ab)
+    if not st or s.status or s.hp <= 0:
+        return
+    immune = ((st == "brn" and ("fire" in s.types or s.ability in ("water-veil", "water-bubble")))
+              or (st == "par" and ("electric" in s.types or s.ability == "limber"))
+              or (st == "psn" and ({"poison", "steel"} & set(s.types) or s.ability == "immunity"))
+              or s.ability == "purifying-salt" or s.item == "covert-cloak")
+    if immune:
+        return
+    if s.rng is not None:
+        hit = s.rng.random() < 0.3
+    else:
+        s.cprob = 1 - (1 - s.cprob) * 0.7
+        hit = s.cprob >= 0.5
+    if hit:
+        if s.item == "lum-berry":
+            s.item = None
+        else:
+            s.status = st
 
 
 def act(s, o, mv, field, o_action, mult=1.0):
@@ -659,6 +730,17 @@ def act(s, o, mv, field, o_action, mult=1.0):
         s.pp[k] -= 1
     if s.item == "choice-scarf" and not s.locked and kind == "attack":
         s.locked = k
+    if kind == "protect":
+        s.protected = True
+        if k == "kings-shield" and s.b.blade is not None:
+            s.blade = False                                # 킬가르도: 실드폼으로 돌아간다
+        return
+    # 상대가 방어 중이면 공격·상태이상은 막힌다(모으기 첫 턴·자기 강화는 통과)
+    if o.protected and kind in ("attack", "status") and not (kind == "attack" and k in CHARGE and s.charging != k):
+        spiky = o_action and o_action[0] == "move" and o_action[1]["key"] == "spiky-shield"
+        if kind == "attack" and spiky and "contact" in mv["traits"] and s.ability != "magic-guard":
+            s.hp -= s.maxhp / 8                            # 니들가드: 접촉하면 1/8
+        return
     if kind == "attack":
         if k in CHARGE and s.charging != k and not (CHARGE[k] and weather_for(field, s) == CHARGE[k]):
             s.charging = k
@@ -687,7 +769,11 @@ def act(s, o, mv, field, o_action, mult=1.0):
                 if k not in ALWAYS_CRIT and o.ability not in ("battle-armor", "shell-armor") and r.random() < 1 / 24:
                     d *= 1.5
         rb = RESIST_BERRY.get(o.item)
+        if s.charged and move_type(s, mv, field) == "electric":
+            s.charged = False                              # 충전은 한 번 쓰면 끝
         dealt = _take(o, d, field, hits=n_hits(s, mv))
+        if dealt > 0 and o.hp > 0 and o.ability == "electromorphosis":
+            o.charged = True
         if dealt > 0 and o.hp > 0 and mv["cat"] == "physical" and o.ability == "weak-armor":
             o.boost[2] = max(-6, o.boost[2] - 1)          # 깨어진갑옷: 방어 −1, 스피드 +2
             o.boost[5] = min(6, o.boost[5] + 2)
@@ -704,7 +790,11 @@ def act(s, o, mv, field, o_action, mult=1.0):
         meta = mv["meta"]
         dr = meta.get("drain") or 0
         if dr > 0:
-            s.hp = min(s.maxhp, s.hp + dealt * dr / 100)
+            if o.ability == "liquid-ooze":                 # 해감액: 흡수한 만큼 오히려 피해
+                if s.ability != "magic-guard":
+                    s.hp -= dealt * dr / 100
+            else:
+                s.hp = min(s.maxhp, s.hp + dealt * dr / 100)
         elif dr < 0 and s.ability not in ("rock-head", "magic-guard"):
             s.hp -= dealt * (-dr) / 100
         if s.item == "life-orb" and dealt > 0 and s.ability != "magic-guard":
@@ -714,10 +804,14 @@ def act(s, o, mv, field, o_action, mult=1.0):
                 s.hp -= s.maxhp / 6
             if o.ability in ("rough-skin", "iron-barbs"):
                 s.hp -= s.maxhp / 8
+        if "contact" in mv["traits"] and dealt > 0:
+            _contact_reaction(s, o)
         if (meta.get("statChance") or 0) >= 100 and mv["stat_changes"]:
             ch = mv["stat_changes"]
             if k in SELF_DROP or all(c["change"] > 0 for c in ch):
                 _apply_stat(s, ch)
+            elif o.ability == "mirror-armor" and o.hp > 0:
+                _apply_stat(s, ch)                          # 미러아머: 능력 하락을 되받아친다
             elif o.ability not in ("clear-body", "white-smoke", "full-metal-body") and o.hp > 0:
                 _apply_stat(o, ch)
         if k == "clear-smog":
@@ -748,6 +842,9 @@ def act(s, o, mv, field, o_action, mult=1.0):
         if k == "rest":
             s.hp = s.maxhp
             s.status, s.tox, s.sleep = "slp", 0, 2
+        elif k == "wish":
+            if not s.wish:
+                s.wish = 2                                 # 다음 턴 끝에 최대 HP 1/2 회복
         else:
             s.hp += _heal_amount(s, mv, field)
     elif kind == "status":
@@ -778,6 +875,19 @@ def end_of_turn(s, o, field):
         s.hp -= s.maxhp / 16
     if field.weather == "snow" and s.ability == "ice-body":
         s.hp = min(s.maxhp, s.hp + s.maxhp / 16)
+    if field.weather == "rain" and s.ability == "rain-dish":
+        s.hp = min(s.maxhp, s.hp + s.maxhp / 16)
+    if s.status and s.status != "slp":
+        if field.weather == "rain" and s.ability == "hydration":
+            s.status, s.tox = None, 0                      # 촉촉바디
+        elif s.ability == "shed-skin":                     # 탈피 30%: 확률 모드는 뽑고, 기대값 모드는 누적 0.5 에서
+            if s.rng is not None:
+                cure = s.rng.random() < 0.3
+            else:
+                s.shed = 1 - (1 - s.shed) * 0.7
+                cure = s.shed >= 0.5
+            if cure:
+                s.status, s.tox, s.shed = None, 0, 0.0
     if s.item == "leftovers" or (s.item == "black-sludge" and "poison" in s.types):
         s.hp = min(s.maxhp, s.hp + s.maxhp / 16)
     if field.terrain == "grassy" and grounded(s):
@@ -798,7 +908,12 @@ def end_of_turn(s, o, field):
         if s.bound:
             s.hp -= s.maxhp * s.bind_frac
             s.bound -= 1
+    if s.wish:
+        s.wish -= 1
+        if s.wish == 0 and s.hp > 0:
+            s.hp += s.maxhp / 2                            # 희망사항 발동
     s.hp = min(s.hp, s.maxhp)
+    s.protect_last, s.protected = s.protected, False
     if s.ability == "speed-boost":
         s.boost[5] = min(6, s.boost[5] + 1)
 
@@ -809,6 +924,8 @@ def _setup_field(a, b, field):
         if x.b.entry_ability == "intimidate" and y.b.entry_ability not in INTIM_BLOCK and y.item != "clear-amulet":
             if y.b.entry_ability == "guard-dog":
                 y.boost[1] += 1
+            elif y.b.entry_ability == "mirror-armor":
+                x.boost[1] -= 1                            # 미러아머: 위협을 되받아친다
             else:
                 y.boost[1] -= 1
                 if y.b.entry_ability == "defiant":
@@ -948,9 +1065,13 @@ def simulate(A, B, planA=("atk", None, 0), planB=("atk", None, 0), hpA=1.0, hpB=
 
 
 def plans(b):
+    """계획 후보 전부(기술 순서로 자르지 않는다 — 예전 out[:5] 는 뒤쪽 기술의 계획을 버렸다).
+    기술이 4개라 많아야 ~9개: 때리기 / 기습 없이 / 버티기(회복·방어 먼저) / 쌓기 1·2회 / 상태이상 먼저."""
     out = [("atk", None, 0)]
     if COND_PRIORITY & set(b.moves):
         out.append(("atk", "nosucker", 0))     # 기습을 읽히는 경우(상대 변화기)에 대비해 기습 없이 때리는 계획
+    if any(b.kinds[m] in ("heal", "protect") for m in b.moves):
+        out.append(("atk", "sustain", 0))      # 회복 먼저·방어로 잔여 피해 벌기, 공격은 그다음
     for k in b.moves:
         kd = b.kinds[k]
         if kd == "setup":
@@ -959,7 +1080,7 @@ def plans(b):
                 out.append(("setup", k, 2))
         elif kd == "status":
             out.append(("status", k, 0))
-    return out[:5]
+    return list(dict.fromkeys(out))
 
 
 W_NEUTRAL, W_SWITCH = 0.6, 0.2
