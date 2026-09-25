@@ -5,6 +5,7 @@ matrix.npz   카드 × 상대 개체 상성 행렬
 """
 import json
 import os
+from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
@@ -15,15 +16,33 @@ from .matrix import compute
 from .meta import opponents, stones_of, team_entities, entity_id
 
 
+MODEL_FILES = ("engine.py", "sets.py", "meta.py", "matrix.py", "game.py", "data.py")
+
+
+def model_version():
+    """값 계산에 쓰이는 소스의 지문. 엔진·세트·상대 모델을 고치면 캐시 폴더가 바뀌어 자동으로 다시 계산된다
+    (예전에는 data/processed/ 를 손으로 지우지 않으면 옛 행렬을 그대로 썼다)."""
+    import hashlib
+    h = hashlib.sha256()
+    here = Path(__file__).resolve().parent
+    for f in MODEL_FILES:
+        h.update((here / f).read_bytes())
+    return h.hexdigest()[:10]
+
+
 def pdir(D):
-    d = ROOT / "data" / "processed" / D.dir.name
+    d = ROOT / "data" / "processed" / D.dir.name / model_version()
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
-def pool_keys(D, n=None):
-    """팀 후보 풀. n=None 이면 싱글 순위 전 종(op.gg 통계가 있는 것)."""
-    ks = [r["key"] for r in D.TIER if r["key"] in D.USAGE and r["key"] in D.DEX]
+MAX_RANK = 200   # 이보다 순위가 낮은 포켓몬은 실전에서 거의 안 쓰여 추천하지 않는다(상대 모델에는 남긴다)
+
+
+def pool_keys(D, n=None, max_rank=MAX_RANK):
+    """팀 후보 풀: 싱글 순위 max_rank 위 이내(op.gg 통계가 있는 것). n 을 주면 그중 상위 n 종."""
+    ks = [r["key"] for r in D.TIER if r["key"] in D.USAGE and r["key"] in D.DEX
+          and (max_rank is None or r["rank"] <= max_rank)]
     return ks if n is None else ks[:n]
 
 

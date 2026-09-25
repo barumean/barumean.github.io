@@ -9,6 +9,8 @@
 
 모델 밖: 교체, 급소, 명중 분산(기대 피해로 처리), 방어, 압정/스텔스록, 도발·앵콜, 트릭룸.
 """
+import math
+
 from .scrape import NATURES
 
 TYPES = ["normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground",
@@ -174,7 +176,7 @@ class Side:
     __slots__ = ("b", "maxhp", "hp", "boost", "status", "tox", "sleep", "item", "disguise", "locked", "charging",
                  "recharge", "blade", "sitrus", "heals", "seeded", "turn", "plan_left", "status_done", "stats",
                  "types", "ability", "flinch", "air", "pp", "bound", "bind_frac", "rng", "protean_used",
-                 "charged", "protected", "protect_last", "wish", "cprob", "shed")
+                 "charged", "protected", "protect_last", "wish", "cprob", "shed", "miss")
 
     def __init__(self, b, hpfrac=1.0):
         self.b = b
@@ -212,6 +214,7 @@ class Side:
         self.wish = 0              # 희망사항: 남은 턴(0 이 되는 턴 끝에 최대 HP 1/2 회복)
         self.cprob = 0.0           # 접촉 상태이상(정전기 등) 누적 확률 — 기대값 모드용
         self.shed = 0.0            # 탈피 누적 확률 — 기대값 모드용
+        self.miss = {}             # 기술별 빗나감 누적(기대값 모드): 0.5 에 이르는 차례에 빗나간다
 
     def st(self, i, ignore_boost=False):
         s = (self.b.blade if (self.blade and self.b.blade and i in (1, 2, 3, 4)) else self.stats)[i]
@@ -410,8 +413,10 @@ def damage(att, dfd, mv, field, first_hit_check=True):
         d *= 0.5                                         # 파동의방호: 접촉 물리 반감
     if dab == "dry-skin" and t == "fire":
         d *= 1.25
+    # 멀티스케일·반감 열매는 '첫 타'만 줄인다. 연속기는 위력×타수로 한 번에 계산하므로 첫 타 비중만큼만 반감.
+    first = _first_hit_share(att, mv)
     if dab in ("multiscale", "shadow-shield") and dfd.hp >= dfd.maxhp:
-        d *= 0.5
+        d *= 1 - 0.5 * first
     if dab in ("filter", "solid-rock", "prism-armor") and eff > 1:
         d *= 0.75
     # 도구
@@ -428,8 +433,17 @@ def damage(att, dfd, mv, field, first_hit_check=True):
         d *= 1.2
     rb = RESIST_BERRY.get(dfd.item)
     if rb and rb == t and (eff > 1 or rb == "normal"):
-        d *= 0.5
+        d *= 1 - 0.5 * first
     return d
+
+
+def _first_hit_share(att, mv):
+    """연속기에서 첫 타가 차지하는 피해 비중. 단타기는 1. 트리플악셀·트리플킥은 20/120."""
+    k = mv["key"]
+    if k in HIT_POWER:
+        return 1 / HIT_POWER[k]
+    n = n_hits(att, mv)
+    return 1.0 / n if n > 1 else 1.0
 
 
 # ── 전투 진행 ────────────────────────────────────────────────────
@@ -443,6 +457,11 @@ def _acc(mv, att, field):
     if mv["key"] in ("thunder", "hurricane") and field.weather == "rain":
         return 1.0
     return a / 100.0
+
+
+def will_hit(s, k, a):
+    """기대값 모드에서 이번 사용이 맞는가: 빗나감 누적 + 이번 몫이 0.5 미만이면 맞는다."""
+    return a >= 1.0 or s.miss.get(k, 0.0) + (1 - a) < 0.5
 
 
 def _usable(s, m, turn):
@@ -500,8 +519,9 @@ def best_attack(s, o, field, can_ko_only=False, avoid=()):
         nh = n_hits(s, mv)
         blocks = blocks0 and not (nh > 1 and not o.disguise)      # 연속기는 띠·옹골참을 뚫는다
         cap = max(1.0, o.hp - 1) if blocks else o.hp
-        # '잡는다' 판정은 실제로 들어갈 피해로: 기대값 모드는 명중을 곱한 값, 확률 모드는 맞았을 때 값
-        hit_d = d if s.rng is not None else d * a
+        # '잡는다' 판정은 실제로 들어갈 피해로: 확률 모드는 맞았을 때 값,
+        # 기대값 모드는 act() 와 같은 규칙(빗나감 누적)으로 이번에 맞으면 전체 피해, 빗나갈 차례면 0
+        hit_d = d if (s.rng is not None or will_hit(s, k, a)) else 0.0
         if hit_d >= o.hp and not blocks and k not in CHARGE:
             lethal = rf * o.hp >= s.hp
             key = (not lethal, priority(s, mv, field), a, -rf, d)
@@ -759,7 +779,15 @@ def act(s, o, mv, field, o_action, mult=1.0):
             s.types = [move_type(s, mv, field)]            # 막는 타입도 바뀐다
             s.protean_used = True
         if s.rng is None:
-            d = damage(s, o, mv, field) * _acc(mv, s, field) * mult          # 기대 피해
+            # 기대값 모드: 피해에 명중률을 곱하지 않는다(곱하면 확정 1타가 1타가 아니게 된다).
+            # 대신 기술마다 빗나감 확률을 누적해 0.5 에 이르는 차례에만 빗나간다 — 90% 기술은 5번째에 한 번.
+            a = _acc(mv, s, field)
+            if will_hit(s, k, a):
+                s.miss[k] = s.miss.get(k, 0.0) + (1 - a)
+                d = damage(s, o, mv, field) * mult
+            else:
+                s.miss[k] = s.miss.get(k, 0.0) + (1 - a) - 1
+                d = 0.0
         else:
             r = s.rng
             if r.random() >= _acc(mv, s, field):
@@ -771,6 +799,7 @@ def act(s, o, mv, field, o_action, mult=1.0):
         rb = RESIST_BERRY.get(o.item)
         if s.charged and move_type(s, mv, field) == "electric":
             s.charged = False                              # 충전은 한 번 쓰면 끝
+        hp_before = o.hp
         dealt = _take(o, d, field, hits=n_hits(s, mv))
         if dealt > 0 and o.hp > 0 and o.ability == "electromorphosis":
             o.charged = True
@@ -799,13 +828,19 @@ def act(s, o, mv, field, o_action, mult=1.0):
             s.hp -= dealt * (-dr) / 100
         if s.item == "life-orb" and dealt > 0 and s.ability != "magic-guard":
             s.hp -= s.maxhp / 10
+        # 접촉 반격은 맞은 타마다. 도중에 쓰러지면 쓰러뜨린 타까지만.
+        nh = n_hits(s, mv)
+        landed = nh
+        if nh > 1 and o.hp <= 0 and d > 0:
+            landed = min(nh, max(1.0, math.ceil(hp_before / (d / nh))))
         if "contact" in mv["traits"] and dealt > 0 and s.ability != "magic-guard":
             if o.item == "rocky-helmet":
-                s.hp -= s.maxhp / 6
+                s.hp -= s.maxhp / 6 * landed
             if o.ability in ("rough-skin", "iron-barbs"):
-                s.hp -= s.maxhp / 8
+                s.hp -= s.maxhp / 8 * landed
         if "contact" in mv["traits"] and dealt > 0:
-            _contact_reaction(s, o)
+            for _ in range(max(1, int(round(landed)))):
+                _contact_reaction(s, o)
         if (meta.get("statChance") or 0) >= 100 and mv["stat_changes"]:
             ch = mv["stat_changes"]
             if k in SELF_DROP or all(c["change"] > 0 for c in ch):
