@@ -44,7 +44,7 @@ def cmd_scrape(a):
 # ── prep / team ─────────────────────────────────────────────────
 def _prepare(D, a, extra=()):
     from .pipeline import pool_keys, optimize_pool, make_cards, opponent_space, card_matrix
-    keys = pool_keys(D, a.pool)
+    keys = pool_keys(D, a.pool, getattr(a, "max_rank", 200) or None)   # --must 로 준 포켓몬은 순위와 관계없이 extra 로 들어간다
     ex = {D.mon(x) for x in (a.exclude.split(",") if getattr(a, "exclude", None) else [])}
     keys = [k for k in dict.fromkeys(keys + list(extra)) if k not in ex]
     sets = optimize_pool(D, keys, a.workers, log=_log)
@@ -99,7 +99,7 @@ def cmd_team(a):
     pick = max(safer, key=lambda r: r[1]) if safer else top_r
     L = []
     L.append(f"# 추천 파티 — 싱글 {D.SEASON.upper()} (op.gg 수집 {D.dir.name})\n")
-    L.append(f"풀: {'싱글 순위 전 종' if a.pool is None else f'싱글 순위 상위 {a.pool}종'} ({len(sets)}종) · 상대 표본: 레플리카 싱글 팀 {len(teams)}개 · 카드 {len(cards)}장\n")
+    L.append(f"풀: 싱글 {a.max_rank or '전'}위 이내{'' if a.pool is None else f' 중 상위 {a.pool}종'} ({len(sets)}종 — 그보다 낮은 순위는 거의 안 쓰여 추천에서 제외, 상대로는 계산) ·상대 표본: 레플리카 싱글 팀 {len(teams)}개 · 카드 {len(cards)}장\n")
     L.append("## 이 파티를 쓰세요\n")
     L.append(f"팀 값 **{pick[1]:+.4f}** (±{pick[3]:.4f}) · 부트스트랩 1위 확률 {pick[2] * 100:.0f}% · 무답 노출 {ts.gap(list(pick[0])) * 100:.1f}%\n")
     L.append("```")
@@ -457,7 +457,8 @@ def main():
     s.add_argument("--delay", type=float, default=1.0)
     for name in ("prep", "team"):
         s = sub.add_parser(name)
-        s.add_argument("--pool", type=int, default=None, help="후보 풀 크기(싱글 순위 상위 N). 기본: 전 종")
+        s.add_argument("--pool", type=int, default=None, help="후보 풀 크기(싱글 순위 상위 N). 기본: --max-rank 이내 전부")
+        s.add_argument("--max-rank", type=int, default=200, help="이 순위보다 낮은 포켓몬은 추천하지 않음(기본 200, 0 = 제한 없음)")
         s.add_argument("--exclude", default=None)
         s.add_argument("--workers", type=int, default=None)
         if name == "team":
