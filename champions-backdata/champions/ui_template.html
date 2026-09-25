@@ -1,5 +1,11 @@
+<!doctype html>
+<html lang="ko">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>챔피언스 선출 보드</title>
+<meta name="description" content="포켓몬 챔피언스 싱글 배틀 선출 보드 — 상대 6마리를 고르면 내 파티에서 낼 3마리와 선봉을 계산합니다.">
+<meta name="theme-color" content="#D8402F">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23fff' stroke='%23161C2B' stroke-width='3'/%3E%3Cpath d='M2 16a14 14 0 0 1 28 0z' fill='%23D8402F' stroke='%23161C2B' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23fff' stroke='%23161C2B' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
@@ -43,7 +49,7 @@ header .src{font-size:12px}
 .mine .m{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;display:flex;align-items:center;gap:6px}
 .mine .m small{color:var(--muted);font-size:11px}
 
-.grid2{display:grid;grid-template-columns:1fr;gap:22px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:22px}
 @media (min-width:900px){.grid2{grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:start}.right{position:sticky;top:env(safe-area-inset-top,0px)}}
 
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
@@ -53,22 +59,24 @@ header .src{font-size:12px}
 .slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .slot{background:var(--panel);border:1.5px dashed var(--line);border-radius:10px;min-height:62px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;gap:3px;position:relative;text-align:left;cursor:pointer}
 .slot.filled{border-style:solid}
-.slot .nm{font-weight:700;font-size:14px;line-height:1.25;padding-right:18px;overflow-wrap:anywhere}
+.slot .nm{font-weight:700;font-size:14px;line-height:1.25;padding-right:22px;word-break:keep-all;overflow-wrap:anywhere}
 .slot .mg{font-size:11px;color:var(--muted)}
 .slot .mg b{color:var(--ink);font-weight:500}
-.slot .x{position:absolute;top:4px;right:4px;border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:4px;cursor:pointer}
+.slot .x{position:absolute;top:0;right:0;border:0;background:none;color:var(--muted);font-size:17px;line-height:1;padding:7px 8px;cursor:pointer}
+@media (max-width:520px){.slot{padding:8px}.slot .nm{font-size:13px}}
 .slot.empty{color:var(--muted);font-size:13px;align-items:center;cursor:default}
 .tools{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .tools input{flex:1 1 180px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;color:var(--ink)}
 .btn{background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
 .hint{font-size:12px;color:var(--muted);margin:0 0 8px}
-.pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px;max-height:460px;overflow:auto;padding:2px}
+.pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;max-height:460px;overflow:auto;padding:2px}
 .types{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .ty{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 9px 3px 7px;font-size:12px;cursor:pointer}
 .ty[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
 .ty.reset{color:var(--muted)}
 .pk{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 8px;cursor:pointer;text-align:left;font-size:13px;line-height:1.2}
-.pk .w{margin-left:auto;font-size:11px;color:var(--muted)}
+.pk .pn{display:flex;flex-direction:column;min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+.pk .w{font-size:11px;color:var(--muted)}
 .pk[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
 .pk[aria-pressed="true"] .w{color:inherit;opacity:.7}
 
@@ -105,7 +113,14 @@ header .src{font-size:12px}
 .legend{font-size:11px;color:var(--muted);margin-top:6px}
 .empty-state{color:var(--muted);font-size:14px;padding:24px 4px}
 .ex{font-size:11px;background:var(--chip);border-radius:999px;padding:2px 8px;color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){.card,.pk,.slot{transition:background .12s,border-color .12s}}
+.jump{position:fixed;left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;display:flex;align-items:center;gap:10px;background:var(--accent);color:var(--accent-ink);border-radius:12px;padding:11px 14px;border:0;font:inherit;font-size:14px;text-align:left;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+.jump[hidden]{display:none}
+.jump b{font-family:var(--display);font-weight:400;font-size:17px}
+.jump .go{margin-left:auto;font-size:12px;white-space:nowrap;opacity:.9}
+.jump .ord{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:900px){.jump{display:none}}
+@media (max-width:520px){.tools input{flex-basis:100%}.tools .btn{flex:1 1 0}}
+@media (prefers-reduced-motion:no-preference){.card,.pk,.slot{transition:background .12s,border-color .12s}html{scroll-behavior:smooth}}
 </style>
 
 <div class="wrap">
@@ -123,6 +138,7 @@ header .src{font-size:12px}
         <input id="q" type="search" placeholder="이름 또는 타입 (예: 보만다, 메가, 페어리)" autocomplete="off">
         <button class="btn" id="clear" type="button">비우기</button>
         <button class="btn" id="sample" type="button">예시</button>
+        <button class="btn" id="share" type="button" title="지금 고른 상대 파티를 링크로 복사">공유</button>
       </div>
       <div class="types" id="types" role="group" aria-label="타입으로 거르기"></div>
       <p class="hint"><span id="count" class="num"></span> · 누르면 추가·빼기. 타입을 두 개 고르면 두 타입을 모두 가진 포켓몬만 보입니다. 메가가 가능한 칸을 누르면 <b>자동(확률) → 메가 확정 → 메가 아님</b> 순서로 바뀝니다. 목록 순서 = 조우 비중.</p>
@@ -137,6 +153,7 @@ header .src{font-size:12px}
     </section>
   </div>
 </div>
+<button class="jump" id="jump" type="button" hidden></button>
 
 <script>
 const DATA = /*__DATA__*/null;
@@ -268,7 +285,7 @@ function renderPool(){
   });
   $("#count").textContent = list.length === OPPS.length ? `전체 ${OPPS.length}종` : `${OPPS.length}종 중 ${list.length}종`;
   $("#pool").innerHTML = list.map(o => `<button class="pk" type="button" role="listitem" data-k="${o.k}" aria-pressed="${chosen.has(o.k)}" title="${esc(o.full + ' — ' + o.set)}">
-    ${dots(o.t)}<span>${esc(o.n)}${o.pm !== undefined ? ' <small class="muted">M</small>' : ''}</span><span class="w num">${o.w ? o.w.toFixed(1) + '%' : ''}</span></button>`).join("")
+    ${dots(o.t)}<span class="pn"><span>${esc(o.n)}</span>${o.w || o.pm !== undefined ? `<span class="w num">${[o.w ? o.w.toFixed(1) + '%' : '', o.pm !== undefined ? 'M' : ''].filter(Boolean).join(' · ')}</span>` : ''}</span></button>`).join("")
     || `<p class="muted">조건에 맞는 포켓몬이 없습니다${q ? ` ("${esc(q)}")` : ""}. 검색어나 타입을 줄여 보세요.</p>`;
 }
 function renderResult(){
@@ -296,15 +313,34 @@ function renderResult(){
   const cs = getComputedStyle(document.documentElement);
   const G = cs.getPropertyValue("--heat-good").trim(), Bd = cs.getPropertyValue("--heat-bad").trim();
   const cell = (v, pick) => `<td class="${pick?'pick':''}" style="background:rgba(${v>=0?G:Bd},${Math.min(1, Math.abs(v)) * 0.55 + 0.05})">${fmt(v)}</td>`;
-  const heat = `<div class="block"><h2>상성표 (나 → 상대)</h2><div class="scroll"><table class="heat"><thead><tr><th></th>${slots.map((_, j) => `<th>${esc(oname(j))}</th>`).join("")}</tr></thead><tbody>
+  const heat = `<div class="block"><h2>상성표 (나 → 상대)</h2><div class="scroll"><table class="heat"><thead><tr><th></th>${slots.map((s, j) => `<th title="${esc(BY[s.k].set)}">${esc(oname(j))}</th>`).join("")}</tr></thead><tbody>
     ${ME.map((_, i) => `<tr><th class="rh">${esc(name(i))}</th>${slots.map((_, j) => cell(V[i][j], r.pos.includes(i))).join("")}</tr>`).join("")}</tbody></table></div>
-    <p class="legend">+1 = 만피로 이김 · 0 = 비등 · −1 = 못 건드리고 짐. 굵은 테두리 = 추천 3마리. 칸에 마우스를 올리면 세트가 보입니다(상대 칸).</p></div>`;
+    <p class="legend">+1 = 만피로 이김 · 0 = 비등 · −1 = 못 건드리고 짐. 굵은 테두리 = 추천 3마리. 상대 이름에 마우스를 올리면 세트가 보입니다.</p></div>`;
+  $("#jump").innerHTML = `<span class="ord">${r.pos.map((i, k) => k ? esc(name(i)) : `<b>${esc(name(i))}</b>`).join(" · ")}</span><span class="go">결과 보기 ↓</span>`;
   el.innerHTML = `<div class="order">${cards}</div>
     <div class="stats"><span>게임 값 <b>${fmt(r.v)}</b></span><span>순수 보장값 <b>${fmt(r.safe)}</b></span><span class="muted">값은 비교용 점수이며 승률이 아닙니다</span></div>
     ${mix}${their}${resp}${heat}`;
 }
-function save(){ try { localStorage.setItem(STORE, JSON.stringify(slots)); } catch (e) {} }
-function render(){ renderSlots(); renderPool(); renderResult(); save(); }
+// 주소 #v=키,키*,키! (* = 메가 확정, ! = 메가 아님) — 링크로 같은 상대를 공유
+const MARK = {mega: "*", base: "!", auto: ""};
+const toHash = () => slots.length ? "#v=" + slots.map(s => s.k + MARK[s.mode]).join(",") : "";
+function fromHash(){
+  const m = location.hash.match(/^#v=([^&]*)/); if (!m) return null;
+  const out = [];
+  for (const t of decodeURIComponent(m[1]).split(",")){
+    const k = t.replace(/[*!]$/, ""); if (!BY[k] || out.some(s => s.k === k)) continue;
+    out.push({k, mode: t.endsWith("*") && BY[k].pm !== undefined ? "mega" : t.endsWith("!") ? "base" : "auto"});
+  }
+  let seen = false; out.forEach(s => { if (s.mode === "mega"){ if (seen) s.mode = "auto"; seen = true; } });
+  return out.length ? out.slice(0, 6) : null;
+}
+function save(){
+  try { localStorage.setItem(STORE, JSON.stringify(slots)); } catch (e) {}
+  try { history.replaceState(null, "", location.pathname + location.search + toHash()); } catch (e) {}
+}
+let resVisible = false;
+const updateJump = () => { $("#jump").hidden = slots.length < 3 || resVisible; };
+function render(){ renderSlots(); renderPool(); renderResult(); save(); updateJump(); }
 
 function toggle(k){
   const i = slots.findIndex(s => s.k === k);
@@ -335,9 +371,22 @@ $("#q").addEventListener("keydown", e => { if (e.key === "Enter"){ const b = $("
 $("#clear").addEventListener("click", () => { slots = []; $("#exTag").hidden = true; render(); });
 function sample(){ slots = OPPS.slice(0, 6).map(o => ({k: o.k, mode: "auto"})); $("#exTag").hidden = false; render(); }
 $("#sample").addEventListener("click", sample);
+$("#jump").addEventListener("click", () => $(".right .panel").scrollIntoView({block: "start"}));
+$("#share").addEventListener("click", async () => {
+  const b = $("#share"), url = location.href;
+  let ok = false;
+  try { await navigator.clipboard.writeText(url); ok = true; } catch (e) {}
+  if (!ok) window.prompt("이 링크를 복사하세요", url);
+  else { b.textContent = "복사됨"; setTimeout(() => { b.textContent = "공유"; }, 1500); }
+});
+window.addEventListener("hashchange", () => { const h = fromHash(); if (h){ slots = h; $("#exTag").hidden = true; render(); } });
+if ("IntersectionObserver" in window)
+  new IntersectionObserver(es => { resVisible = es[0].isIntersecting; updateJump(); }, {rootMargin: "0px 0px -35% 0px"}).observe($(".right .panel"));
 
 renderMine();
 renderTypes();
-try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (Array.isArray(s) && s.length && s.every(x => BY[x.k])) slots = s; } catch (e) {}
+const fromLink = fromHash();
+if (fromLink) slots = fromLink;
+else try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (Array.isArray(s) && s.length && s.every(x => BY[x.k])) slots = s; } catch (e) {}
 if (!slots.length) sample(); else render();
 </script>
