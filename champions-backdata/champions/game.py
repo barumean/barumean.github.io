@@ -8,6 +8,35 @@
 import numpy as np
 
 
+def solve_bayes(Ms, ps, tol=1e-9, max_rounds=200):
+    """상대 유형 θ 를 나는 모르고 상대는 아는 게임(베이지안 게임)의 값.
+        max_x Σθ pθ · min_{yθ} xᵀ Mθ yθ
+    Mθ 를 먼저 확률로 평균하면(Σ pθ Mθ) 상대가 유형별로 대응하지 못하는 것처럼 되어 값이 낙관 쪽으로 치우친다
+    (Jensen). 상대 순수전략 = 유형별 열의 묶음이므로 이중 오라클로 필요한 묶음만 추가하며 푼다.
+    반환: (값, 내 혼합전략 x, 상대가 유형별로 고르는 열 분포 목록)."""
+    Ms = [np.asarray(M, dtype=float) for M in Ms]
+    ps = np.asarray(ps, dtype=float) / sum(ps)
+    m = Ms[0].shape[0]
+    x = np.full(m, 1.0 / m)
+    cols = [tuple(int((x @ M).argmin()) for M in Ms)]
+    v, y = 0.0, np.array([1.0])
+    for _ in range(max_rounds):
+        R = np.array([[sum(p * M[i, c[t]] for t, (p, M) in enumerate(zip(ps, Ms))) for c in cols] for i in range(m)])
+        v, x, y = solve(R)
+        br = tuple(int((x @ M).argmin()) for M in Ms)
+        v_br = sum(p * (x @ M).min() for p, M in zip(ps, Ms))
+        if v_br >= v - tol or br in cols:
+            break
+        cols.append(br)
+    ydist = []
+    for t, M in enumerate(Ms):
+        d = np.zeros(M.shape[1])
+        for c, w in zip(cols, y):
+            d[c[t]] += w
+        ydist.append(d)
+    return float(v), x, ydist
+
+
 def solve(M, tol=1e-12, max_iter=2000):
     """(값, 행 혼합전략 x, 열 혼합전략 y)."""
     M = np.asarray(M, dtype=float)

@@ -83,6 +83,9 @@ class TeamSearch:
         rnd = random.Random(seed)
         C = len(self.cards)
         must = [i for i in must]
+        # 필수는 '종' 기준으로 지킨다. 도구 재배치(reassign_items)가 같은 종의 다른 카드로 바꾸면
+        # 카드 번호가 달라지므로, 번호로 비교하면 그 뒤 한 장 바꾸기에서 필수 종이 빠질 수 있었다.
+        must_keys = {self.cards[i]["key"] for i in must}
         results = {}
         for r in range(restarts):
             team = list(must)
@@ -111,7 +114,7 @@ class TeamSearch:
                 while improved:
                     improved = False
                     for pos in range(6):
-                        if team[pos] in must:
+                        if self.cards[team[pos]]["key"] in must_keys:
                             continue
                         for c in range(C):
                             if c in team:

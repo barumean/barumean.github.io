@@ -10,7 +10,7 @@
   지키기 위한 장치다.
 - 쌓기·회복·상태이상 기술은 op.gg 채용 10% 이상인 것만 후보로 넣는다.
 """
-from .engine import Build, classify, duel, value
+from .engine import Build, classify, duel, value, value_vs
 from .meta import stones_of
 
 LOCK_PCT = 70.0
@@ -166,7 +166,7 @@ def candidate_moves(D, key, form=None):
         if m not in D.MOVES:
             continue
         k = classify(D.MOVES[m])
-        if k == "attack" and p >= 3.0 or k in ("setup", "heal", "status", "phaze") and p >= UTIL_MIN_PCT:
+        if k == "attack" and p >= 3.0 or k in ("setup", "heal", "status", "phaze", "protect", "field", "encore") and p >= UTIL_MIN_PCT:
             cands.append(m)
     cats = {"physical", "special"}                      # 유형별 거르기는 optimize 에서
     learn = D.DEX[key]["learnset"] | D.DEX[form or key]["learnset"]
@@ -265,12 +265,13 @@ class Evaluator:
         self.opps = [(e, b, w / tot) for e, b, w in opps]
         self.cache = {}
 
-    def score(self, b, full=False):
-        sig = (full, b.key, b.item, b.entry_ability, b.nature, b.sp, tuple(sorted(b.moves)))
+    def score(self, b, full=False, branch=False):
+        sig = (full, branch, b.key, b.item, b.entry_ability, b.nature, b.sp, tuple(sorted(b.moves)))
         v = self.cache.get(sig)
         if v is None:
             f = value if full else duel
-            v = sum(w * f(b, ob) for e, ob, w in self.opps if ob.key != b.key)
+            # 세트 탐색은 평가가 수십만 번이라 결정적 모드(branch=False). 최종 후보 비교와 상성 행렬·선출은 분기 모드.
+            v = sum(w * value_vs(b, ob, branch=branch, f=f) for e, ob, w in self.opps if ob.key != b.key)
             self.cache[sig] = v
         return v
 
@@ -324,6 +325,11 @@ def optimize(D, key, ev, item=None, mega=None, ability=None, nature=None, sp=Non
     if not res:                                          # 고정 기술·도구가 어느 유형과도 안 맞으면 제약 없이
         res["mixed:None"] = _optimize_arch(D, key, ev, "mixed", item, form, ability, nature, sp, fixed_moves, free,
                                            fix_item, fix_spread, force=True, role=None)
+    # 유형·역할별 최종 후보는 분기 모드(명중·문턱 갈래)로 다시 채점해서 고른다 — 탐색의 결정적 모드와
+    # 상성 행렬의 분기 모드가 어긋나 최종 선택이 옛 계산에 기대던 문제(ASTRA 3)
+    for r in res.values():
+        r["score_det"] = r["score"]
+        r["score"] = ev.score(r["build"], True, branch=True)
     best = max(res.values(), key=lambda r: r["score"])
     best["arch_scores"] = {a: r["score"] for a, r in res.items()}
     return best

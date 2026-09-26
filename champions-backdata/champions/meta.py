@@ -44,6 +44,14 @@ def _mode(xs):
 
 
 def modal_build(D, key, mega=False, slots=(), stone=None):
+    """대표 세트 + (값을 못 매기는 기술이 있으면) 그 칸을 공격기로 바꾼 변형을 .alt 로 붙인다."""
+    b = _modal_build(D, key, mega, slots, stone)
+    if b is not None:
+        b.alt = make_alt(D, b)
+    return b
+
+
+def _modal_build(D, key, mega=False, slots=(), stone=None):
     """대표 세트. 레플리카 팀에 그 개체(메가 여부까지) 빌드가 3개 이상 있으면 성격·스탯포인트·도구·기술을
     거기서 최빈값으로 가져오고(실제 한 벌의 세트라 일관성이 있다), 아니면 op.gg 통계 최빈값을 쓴다.
     stone 을 주면 그 스톤의 메가(리자몽 X/Y 등)로 고정."""
@@ -92,6 +100,22 @@ def modal_build(D, key, mega=False, slots=(), stone=None):
     nats = [n for n, _ in u["natures"]]
     nature = next((n for n in nats if spread_fits(n, sp, arch) and role_of(n, sp, arch)), nats[0] if nats else "serious")
     return Build(D, key, moves, item, ability, nature, sp, label="meta")
+
+
+def make_alt(D, b):
+    """시뮬이 값을 못 매기는 기술(classify 'none': 스텔스록·압정·길동무·트릭룸 등) 칸을 op.gg 채용 순 다음 공격기로
+    바꾼 변형. 바꿀 칸이 없거나 메타몽이면 None."""
+    if b is None or b.ability == "imposter":
+        return None
+    dead = [m for m in b.moves if b.kinds[m] == "none"]
+    if not dead:
+        return None
+    u = D.USAGE.get(b.key) or {"moves": []}
+    repl = [m for m, p in u["moves"] if m in D.MOVES and m not in b.moves and classify(D.MOVES[m]) == "attack"]
+    if not repl:
+        return None
+    moves = [m for m in b.moves if m not in dead] + repl[:len(dead)]
+    return Build(D, b.key, moves, b.item, b.entry_ability, b.nature, b.sp, label="meta-alt")
 
 
 def entity_id(key, mega):

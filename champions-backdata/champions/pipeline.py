@@ -16,7 +16,8 @@ from .matrix import compute
 from .meta import opponents, stones_of, team_entities, entity_id
 
 
-MODEL_FILES = ("engine.py", "sets.py", "meta.py", "matrix.py", "game.py", "data.py")
+MODEL_FILES = ("engine.py", "sets.py", "meta.py", "matrix.py", "game.py", "data.py",
+               "pipeline.py", "scrape.py")   # 카드 구성(make_cards)·성격 표(NATURES)도 캐시 값에 영향
 
 
 def model_version():
@@ -30,8 +31,18 @@ def model_version():
     return h.hexdigest()[:10]
 
 
+def data_version(D):
+    """원본 데이터 지문(파일 크기·수정 시각). 같은 날 다시 수집해도 캐시가 섞이지 않게."""
+    import hashlib
+    h = hashlib.sha256()
+    for f in sorted(D.dir.rglob("*.json")):
+        st = f.stat()
+        h.update(f"{f.relative_to(D.dir)}|{st.st_size}|{int(st.st_mtime)}".encode())
+    return h.hexdigest()[:6]
+
+
 def pdir(D):
-    d = ROOT / "data" / "processed" / D.dir.name / model_version()
+    d = ROOT / "data" / "processed" / D.dir.name / f"{model_version()}-{data_version(D)}"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -147,6 +158,23 @@ def opponent_space(D):
         if len(idx) == 6:
             teams.append(idx)
     return opps, ids, teams
+
+
+def card_parts(D, cards, opps, workers=None, log=print):
+    """민감도 분석용 구성 요소 행렬(N, PA, PB) — parts.npz 에 캐시."""
+    import numpy as np
+    from .matrix import compute_parts
+    f = pdir(D) / "parts.npz"
+    cid = [c["id"] for c in cards]
+    oid = [e for e, _, _ in opps]
+    if f.exists():
+        z = np.load(f, allow_pickle=True)
+        if list(z["cards"]) == cid and list(z["opps"]) == oid:
+            return z["N"], z["PA"], z["PB"]
+    log(f"[sensitivity] 구성 요소 행렬 {len(cards)} × {len(opps)} 계산…")
+    N, PA, PB = compute_parts([Build(D, **c["spec"]) for c in cards], [b for _, b, _ in opps], workers)
+    np.savez_compressed(f, cards=np.array(cid, dtype=object), opps=np.array(oid, dtype=object), N=N, PA=PA, PB=PB)
+    return N, PA, PB
 
 
 def card_matrix(D, cards, opps, workers=None, log=print):

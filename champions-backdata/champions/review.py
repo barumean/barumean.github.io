@@ -3,7 +3,7 @@
 import inspect
 import json
 
-from . import engine, matrix, meta, pick, pipeline, sets, team
+from . import engine, game, matrix, meta, pick, pipeline, sets, team
 from .audit import api_key, ask
 
 INSTRUCTIONS = """You review the core decision logic of a Pokémon Champions SINGLES team-building tool (3-of-6 pick, Lv50, one Mega per team, item clause).
@@ -34,14 +34,14 @@ SCHEMA = {
     "required": ["adequate", "verdict", "issues"],
 }
 
-_ENGINE_FUNCS = ("best_attack", "choose", "simulate", "plans", "value", "duel_stats")
+_ENGINE_FUNCS = ("Brancher", "branch_value", "best_attack", "choose", "simulate", "plans", "value", "value_vs", "duel_stats")
 _PIPE_FUNCS = ("make_cards", "opponent_space")
 _MATRIX_FUNCS = ("empirical_one", "empirical", "blend")
 
 
 def source():
     parts = []
-    for mod in (team, pick, meta, sets):
+    for mod in (game, team, pick, meta, sets):
         parts.append(f"# ==== {mod.__name__} ====\n{inspect.getsource(mod)}")
     parts.append(f"# ==== {matrix.__name__} (excerpt) ====\n{inspect.getdoc(matrix)}\nLAMBDA = {matrix.LAMBDA}\n"
                  + "\n".join(inspect.getsource(getattr(matrix, f)) for f in _MATRIX_FUNCS))

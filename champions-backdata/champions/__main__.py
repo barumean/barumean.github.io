@@ -7,7 +7,8 @@
   pick     상대 6마리 보고 선출 3 + 선봉       --party party.txt --opp 보만다,한카리아스,...
   switch   배틀 중 상대 필드 포켓몬에 낼 교체   --party party.txt --hp 100,80,0,... --opp 보만다 --opp-hp 70
   ui       실전 선출 보드(HTML) 생성 — 상대 6마리를 탭하면 ①선봉 ②③ 순서   --party my.txt
-  check    모델 점검(실전 승패 신호와 상관)
+  check    모델 점검(실전 승패 신호와 상관, 군집 부트스트랩 구간, 타입 기준선, 보류 묶음)
+  sensitivity  가정(실전 신호 가중·교체 가중·효용 척도)을 바꿨을 때 추천 멤버의 생존 비율
   audit    외부 심판 점검: 1:1 매치업을 gpt-6-astra 에 블라인드로 묻고 시뮬과 비교   --pairs 30 --dry
   review   기본 로직 검토: 결정 계층 소스를 gpt-6-astra 에 보내 설계 결함·개선안(압축)   --effort medium --dry
 
@@ -24,10 +25,19 @@ from .data import ROOT, load
 
 
 def _out(name, text):
+    """보고서 저장. 끝에 재현 정보(모델 코드 지문·원본 데이터 지문·수집일·numpy 버전)를 붙인다(M9)."""
     d = ROOT / "out"
     d.mkdir(exist_ok=True)
+    try:
+        import numpy
+        from .pipeline import model_version, data_version
+        D = load()
+        foot = (f"\n\n---\n재현 정보: 모델 코드 지문 `{model_version()}` · 원본 데이터 `{D.dir.name}` / 지문 `{data_version(D)}` · "
+                f"numpy {numpy.__version__} · 생성 {datetime.now():%Y-%m-%d %H:%M}")
+    except Exception as e:                                  # 보고서 저장은 막지 않는다
+        foot = f"\n\n---\n재현 정보를 기록하지 못함: {e}"
     f = d / f"{name}_{datetime.now():%Y%m%d_%H%M}.md"
-    f.write_text(text, encoding="utf-8")
+    f.write_text(text + foot, encoding="utf-8")
     return f
 
 
@@ -101,7 +111,10 @@ def cmd_team(a):
     L.append(f"# 추천 파티 — 싱글 {D.SEASON.upper()} (op.gg 수집 {D.dir.name})\n")
     L.append(f"풀: 싱글 {a.max_rank or '전'}위 이내{'' if a.pool is None else f' 중 상위 {a.pool}종'} ({len(sets)}종 — 그보다 낮은 순위는 거의 안 쓰여 추천에서 제외, 상대로는 계산) ·상대 표본: 레플리카 싱글 팀 {len(teams)}개 · 카드 {len(cards)}장\n")
     L.append("## 이 파티를 쓰세요\n")
-    L.append(f"팀 값 **{pick[1]:+.4f}** (±{pick[3]:.4f}) · 부트스트랩 1위 확률 {pick[2] * 100:.0f}% · 무답 노출 {ts.gap(list(pick[0])) * 100:.1f}%\n")
+    L.append(f"팀 값 {pick[1]:+.2f} (상대 표본 SE ±{pick[3]:.3f}) · 부트스트랩 선택 빈도 {pick[2] * 100:.0f}% · 무답 노출 {ts.gap(list(pick[0])) * 100:.1f}%\n")
+    L.append("> 팀 값은 승률이 아니라 이 모델 안에서의 **비교용 점수**입니다. 후보 사이의 순위와 차이만 의미가 있습니다. "
+             "'선택 빈도'와 SE 는 상대 팀 표본의 불확실성만 담고, 모델 가정(실전 신호 가중 λ, 교체 가중, 효용 척도, 선출 합산식)의 "
+             "불확실성은 담지 않습니다. 가정 쪽 불확실성은 `python -m champions sensitivity` 로 봅니다.\n")
     L.append("```")
     for i in pick[0]:
         L.append(party_line(D, Build(D, **cards[i]["spec"])))
@@ -120,11 +133,21 @@ def cmd_team(a):
     if thin:
         L.append("⚠ 표본이 얇은 멤버: " + ", ".join(f"{D.name(c['key'])}(싱글 {D.RANK.get(c['key'], '-')}위, 레플리카 {nrep.get(c['key'], 0)}팀)" for c in thin)
                  + " — 상대 세트·승패 신호가 적어 값의 불확실성이 큽니다. 아래 후보 표의 대안과 같이 보세요.\n")
+    # 코어 + 유동 자리: 후보 상위 팀들에 공통으로 들어가는 종과, 나머지 자리를 번갈아 채우는 종
+    from collections import Counter
+    top_rows = rows[:min(10, len(rows))]
+    cnt = Counter(cards[i]["key"] for t, *_ in top_rows for i in t)
+    core = [k for k, n in cnt.items() if n == len(top_rows)]
+    flex = [(k, n) for k, n in cnt.most_common() if k not in core]
+    L.append(f"## 코어 {len(core)} + 유동 {6 - len(core)}자리\n")
+    L.append(f"후보 상위 {len(top_rows)}팀에 모두 들어가는 코어: **{' · '.join(D.name(k) for k in core)}**  ")
+    L.append("나머지 자리 후보(상위 팀 등장 수): " + " · ".join(f"{D.name(k)} {n}" for k, n in flex[:10]) + "\n")
+    L.append("> 실전 신호 가중 λ(0.2) 등 근거가 약한 설정에 따라 유동 자리는 바뀔 수 있습니다. 코어가 추천의 단단한 부분입니다.\n")
     L.append("## 통계적으로 구분되지 않는 후보들\n")
-    hdr = ["팀 값", "±SE", "1위 확률", "무답 노출", "구성"]
+    hdr = ["팀 값", "±SE", "선택 빈도", "무답 노출", "구성"]
     tr = []
     for t, v, p, s in rows:
-        tr.append([f"{v:+.4f}", f"{s:.4f}", f"{p * 100:.0f}%", f"{ts.gap(list(t)) * 100:.1f}%",
+        tr.append([f"{v:+.3f}", f"{s:.3f}", f"{p * 100:.0f}%", f"{ts.gap(list(t)) * 100:.1f}%",
                    " / ".join(D.name(Build(D, **cards[i]["spec"]).form) + ("" if cards[i]["mega"] else f"@{D.item_name(cards[i]['item'])}") for i in t)])
     L.append(table(tr, hdr))
     # 파티의 약점
@@ -320,13 +343,17 @@ def cmd_pick(a):
     L += [f"  {i + 1}. {fmt_build(D, b)}" for i, b in enumerate(mine)]
     L.append("\n상대: " + ", ".join(D.name(k) for k in opp_keys) + "\n")
     nm = lambda t, side: "/".join(D.name(mine[i].form) if side == 0 else D.name(opp_keys[i]) for i in t)
-    L.append(f"## 내보낼 3마리: **{nm(r['best'], 0)}**  (게임 값 {r['best_value']:+.3f} · 순수 보장값 {r['safe_value']:+.3f})")
+    L.append(f"## 내보낼 3마리: **{nm(r['best'], 0)}**  (게임 값 {r['best_value']:+.2f} · 이 조합의 최악값 {r['best_worst']:+.2f})")
+    if r["n_scenarios"] > 1:
+        L.append(f"상대 메가 가능성 {r['n_scenarios']}가지(누가 메가인지·없음)를 상대는 알고 나는 모르는 게임으로 풀었습니다.")
+    if r["safe_trio"] != r["best"]:
+        L.append(f"최악값이 가장 좋은 조합(가장 안전한 선택): {nm(r['safe_trio'], 0)} ({r['safe_value']:+.2f})")
     L.append(f"## 선봉: **{D.name(mine[r['lead']].form)}**\n")
     if len(r["mix"]) > 1:
         L.append("선출 혼합(균형에서 각 조합을 낼 비율 — 한 조합만 고집하면 읽힌다): "
                  + " · ".join(f"{nm(t, 0)} (선봉 {D.name(mine[ld].form)}) {p * 100:.0f}%" for t, p, ld in r["mix"]))
     L.append("상대 선출 예상(균형): " + " · ".join(f"{nm(t, 1)} {p * 100:.0f}%" for t, p in r["their_mix"]))
-    L.append("보장값 기준 차선: " + " · ".join(f"{nm(t, 0)} ({v:+.3f})" for t, v in r["alts"]) + "\n")
+    L.append("최악값 기준 차선: " + " · ".join(f"{nm(t, 0)} ({v:+.2f})" for t, v in r["alts"]) + "\n")
     hdr = ["상대 ↓ / 나 →"] + [D.name(b.form) for b in mine] + ["최선의 답"]
     rows = []
     for j, k in enumerate(opp_keys):
@@ -371,6 +398,54 @@ def cmd_switch(a):
     _log(f"저장: {_out('switch', text)}")
 
 
+# ── sensitivity (가정 불확실성, M6) ─────────────────────────────
+SENS_VARIANTS = [("기준(λ 0.2 · 교체 0.2 · 선형)", 0.2, 0.2, "linear"),
+                 ("실전 신호 λ = 0", 0.0, 0.2, "linear"), ("실전 신호 λ = 0.4", 0.4, 0.2, "linear"),
+                 ("교체 등장 가중 0(정면만)", 0.2, 0.0, "linear"), ("교체 등장 가중 0.1", 0.2, 0.1, "linear"),
+                 ("교체 등장 가중 0.3", 0.2, 0.3, "linear"), ("효용 척도: 승패 부호만", 0.2, 0.2, "sign")]
+
+
+def cmd_sensitivity(a):
+    """가정을 하나씩 바꿔 팀을 다시 탐색하고, 추천 멤버가 몇 개의 변형에서 살아남는지 본다.
+    표본 불확실성(부트스트랩)과 달리 모델 가정의 불확실성을 보여준다."""
+    import numpy as np
+    from collections import Counter
+    from .matrix import combine
+    from .pipeline import card_parts
+    from .team import TeamSearch
+    from .textio import table
+    D = load()
+    sets, cards, opps, ids, teams, V0 = _prepare(D, a)
+    N, PA, PB = card_parts(D, cards, opps, a.workers, log=_log)
+    ck, ok = [c["key"] for c in cards], [b.key for _, b, _ in opps]
+    ow = np.array([w for _, _, w in opps])
+    chk = combine(D, ck, ok, N, PA, PB)
+    _log(f"[sensitivity] 구성 요소로 다시 만든 기준 행렬과 캐시 행렬의 최대 차이 {float(np.abs(chk - V0).max()):.4f}")
+    rows, found = [], []
+    for name, lam, w, scale in SENS_VARIANTS:
+        V = combine(D, ck, ok, N, PA, PB, lam, w, scale)
+        ts = TeamSearch(cards, V, ids, teams, ow)
+        res = ts.search((), restarts=a.restarts)
+        cand = list(dict.fromkeys([t for t, _ in res] + [t for t, _ in ts.neighbors(list(res[0][0]), k=8)]))[:16]
+        best = max(cand, key=ts.exact_score)
+        found.append(best)
+        rows.append([name, " / ".join(D.name(cards[i]["key"]) for i in best)])
+        _log(f"  {name}: {rows[-1][1]}")
+    cnt = Counter(cards[i]["key"] for t in found for i in t)
+    base = [cards[i]["key"] for i in found[0]]
+    L = [f"# 민감도 분석 — 모델 가정을 바꿨을 때 추천 파티 (수집 {D.dir.name})\n",
+         "가정을 하나씩 바꿔 같은 탐색(재시작 → 이웃 → 정확값 재정렬)을 돌렸습니다. 동률·무답 규칙은 빼고 정확값 1위를 적습니다.\n",
+         table(rows, ["가정", "추천 파티"]),
+         f"\n## 멤버별 생존 비율 ({len(found)}개 변형 중)\n",
+         table([[D.name(k), f"{n}/{len(found)}", "기준 파티" if k in base else ""] for k, n in cnt.most_common()],
+               ["포켓몬", "살아남은 변형", ""]),
+         "\n해석: 모든 변형에서 살아남는 멤버가 추천의 단단한 부분이고, 나머지 자리는 근거가 약한 가정(λ, 교체 가중, 척도)에 달려 있습니다. "
+         "부트스트랩 '선택 빈도'는 상대 표본 불확실성만 담으므로 이 표와 함께 보세요."]
+    text = "\n".join(L)
+    print(text)
+    _log(f"저장: {_out('sensitivity', text)}")
+
+
 # ── ui (실전 선출 보드) ─────────────────────────────────────────
 def cmd_ui(a):
     from . import ui
@@ -387,9 +462,8 @@ def cmd_ui(a):
 
 # ── check ───────────────────────────────────────────────────────
 def cmd_check(a):
-    from .matrix import sim_vs_empirical
     from .meta import opponents
-    from .textio import fmt_build
+    from .textio import fmt_build, table
     D = load()
     opps = opponents(D)
     L = [f"# 모델 점검 — 수집 {D.dir.name}, 시즌 {D.SEASON}\n",
@@ -403,8 +477,25 @@ def cmd_check(a):
         if b.key not in seen:
             seen.add(b.key)
             bs.append(b)
-    r, n = sim_vs_empirical(D, bs[:a.n])
-    L.append(f"## 시뮬레이션 ↔ op.gg 실전 승패 신호\n\n상위 {a.n}종 {n}쌍 스피어만 ρ = **{r:+.3f}**  (0 이면 무관, 1 이면 순위 완전 일치)")
+    from .matrix import validate_1v1
+    v = validate_1v1(D, bs[:a.n])
+    ci = lambda t: f"[{t[0]:+.3f}, {t[1]:+.3f}]"
+    L.append(f"## 1:1 층 검증: 시뮬레이션 ↔ op.gg 실전 승패 신호 E\n")
+    L.append(f"상위 {v['n_species']}종, E 가 있는 {v['n_pairs']}쌍. 구간은 **종 단위 군집 부트스트랩** 95%입니다"
+             f"(쌍들이 종을 공유해 쌍 독립 가정은 불확실성을 과소추정).\n")
+    L.append(table([["1:1 시뮬레이터", f"{v['rho']:+.3f}", ci(v['rho_ci'])],
+                    ["기준선: 타입 상성(각자 자속 최대 배율 차)", f"{v['rho_type']:+.3f}", ci(v['rho_type_ci'])],
+                    ["**증분**: 시뮬 − 기준선", f"{v['delta']:+.3f}", ci(v['delta_ci'])],
+                    ["타입을 통제한 부분상관", f"{v['partial']:+.3f}", "—"]],
+                   ["예측자", "ρ(·, E)", "95% 구간"]))
+    hA, hB = v["halves"]["A"], v["halves"]["B"]
+    L.append(f"\n종 고정 분할(시드 {__import__('champions.matrix', fromlist=['SPLIT_SEED']).SPLIT_SEED}): "
+             f"A 묶음(조정용) ρ = {hA[0]:+.3f} ({hA[1]}쌍) · **B 묶음(보류용) ρ = {hB[0]:+.3f}** ({hB[1]}쌍)\n")
+    L.append("해석 지침\n"
+             "- 버전 간 ρ 차이가 위 구간 폭(약 ±0.1)보다 작으면 **개선이라고 말할 수 없습니다**.\n"
+             "- 이 지표로 엔진 규칙을 여러 번 조정해 왔으므로 전체 ρ 는 더 이상 표본 외 지표가 아닙니다. "
+             "앞으로 조정 판단은 A 묶음으로만 하고, B 묶음은 보고에만 씁니다.\n"
+             "- E 는 순위 목록에서 만든 신호라 매치업 승률의 추정량이 아니며, 1:1 층만 검증합니다(팀·선출 층은 미검증).")
     text = "\n".join(L)
     print(text)
     _log(f"저장: {_out('check', text)}")
@@ -455,7 +546,7 @@ def main():
     s.add_argument("--max-mons", type=int, default=None, help="기본: 싱글 순위 전 종")
     s.add_argument("--team-pages", type=int, default=None)
     s.add_argument("--delay", type=float, default=1.0)
-    for name in ("prep", "team"):
+    for name in ("prep", "team", "sensitivity"):
         s = sub.add_parser(name)
         s.add_argument("--pool", type=int, default=None, help="후보 풀 크기(싱글 순위 상위 N). 기본: --max-rank 이내 전부")
         s.add_argument("--max-rank", type=int, default=200, help="이 순위보다 낮은 포켓몬은 추천하지 않음(기본 200, 0 = 제한 없음)")
@@ -464,6 +555,8 @@ def main():
         if name == "team":
             s.add_argument("--must", default=None)
             s.add_argument("--restarts", type=int, default=4)
+        if name == "sensitivity":
+            s.add_argument("--restarts", type=int, default=2)
     s = sub.add_parser("moves")
     s.add_argument("--party")
     s.add_argument("--names")
@@ -509,7 +602,8 @@ def main():
     a = ap.parse_args()
     try:
         {"scrape": cmd_scrape, "prep": cmd_prep, "team": cmd_team, "moves": cmd_moves, "pick": cmd_pick,
-         "switch": cmd_switch, "check": cmd_check, "audit": cmd_audit, "review": cmd_review, "ui": cmd_ui}[a.cmd](a)
+         "switch": cmd_switch, "check": cmd_check, "audit": cmd_audit, "review": cmd_review, "ui": cmd_ui,
+         "sensitivity": cmd_sensitivity}[a.cmd](a)
     except KeyError as e:
         if "찾을 수 없음" in str(e):
             raise SystemExit("입력 오류: " + str(e).strip("'\""))

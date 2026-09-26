@@ -208,32 +208,68 @@ function megaProbs(){
   if (!forced){ const t = p.reduce((a,b)=>a+b,0); if (t > 1) p = p.map(v => v / t); }
   return p;
 }
-function matrix(){
-  const p = megaProbs();
-  return ME.map((_, i) => slots.map((s, j) => { const o = BY[s.k]; return o.mv ? p[j]*o.mv[i] + (1-p[j])*o.v[i] : o.v[i]; }));
+// '누가 메가인가'(또는 아무도 아님)별 상성 행렬 — pick.py mega_scenarios 와 같다. 확률로 먼저 섞지 않는다.
+function scenarios(){
+  const p = megaProbs(), base = ME.map((_, i) => slots.map(s => BY[s.k].v[i]));
+  const out = [];
+  slots.forEach((s, j) => {
+    const o = BY[s.k];
+    if (p[j] > 1e-9 && o.mv){ const V = base.map(r => r.slice()); ME.forEach((_, i) => V[i][j] = o.mv[i]); out.push({p: p[j], V}); }
+  });
+  const rest = 1 - out.reduce((a, s) => a + s.p, 0);
+  if (rest > 1e-9 || !out.length) out.push({p: Math.max(rest, 1e-9), V: base});
+  const t = out.reduce((a, s) => a + s.p, 0); out.forEach(s => s.p /= t);
+  return out;
+}
+function matrix(){                                            // 표시용 기대 상성
+  const sc = scenarios();
+  return ME.map((_, i) => slots.map((_, j) => sc.reduce((a, s) => a + s.p * s.V[i][j], 0)));
+}
+// 베이지안 게임(game.py solve_bayes 와 같은 이중 오라클): 나는 유형을 모르고 상대는 알고 고른다
+function solveBayes(Ps, ps){
+  const m = Ps[0].length, T = Ps.length;
+  const colVal = (x, P) => P[0].map((_, j) => x.reduce((a, xi, i) => a + xi * P[i][j], 0));
+  const argmin = arr => arr.reduce((b, v, j) => v < arr[b] ? j : b, 0);
+  let x = Array(m).fill(1 / m);
+  const cols = [Ps.map(P => argmin(colVal(x, P)))];
+  let g;
+  for (let r = 0; r < 200; r++){
+    const R = [...Array(m).keys()].map(i => cols.map(c => c.reduce((a, j, t) => a + ps[t] * Ps[t][i][j], 0)));
+    g = solve(R); x = g.x;
+    const br = Ps.map(P => argmin(colVal(x, P)));
+    const vbr = Ps.reduce((a, P, t) => a + ps[t] * Math.min(...colVal(x, P)), 0);
+    if (vbr >= g.v - 1e-9 || cols.some(c => c.every((j, t) => j === br[t]))) break;
+    cols.push(br);
+  }
+  const ys = Ps.map((P, t) => { const d = Array(P[0].length).fill(0); cols.forEach((c, k) => d[c[t]] += g.y[k]); return d; });
+  return {v: g.v, x, ys};
 }
 
 function analyze(){
-  const V = matrix(), n = ME.length, m = slots.length;
+  const sc = scenarios(), n = ME.length, m = slots.length;
   const A = combos(n, Math.min(3, n)), B = combos(m, Math.min(3, m));
-  const P = A.map(a => B.map(b => {
+  const pickM = V => A.map(a => B.map(b => {
     let ans = 0; for (const j of b){ let mx = -9; for (const i of a) mx = Math.max(mx, V[i][j]); ans += mx; }
     let cnt = 0; for (const i of a){ let mnv = 9; for (const j of b) mnv = Math.min(mnv, V[i][j]); cnt += mnv; }
     return 0.5 * ans / b.length + 0.5 * cnt / a.length;
   }));
-  const g = solve(P);
+  const Ps = sc.map(s => pickM(s.V)), ps = sc.map(s => s.p);
+  const g = solveBayes(Ps, ps);
+  const V = matrix();
+  const y = B.map((_, k) => g.ys.reduce((a, yt, t) => a + ps[t] * yt[k], 0));
   const order = A.map((_, k) => k).sort((a, b) => g.x[b] - g.x[a]);
   const best = A[order[0]];
-  const freq = Array(m).fill(0); B.forEach((b, k) => b.forEach(j => freq[j] += g.y[k]));
+  const freq = Array(m).fill(0); B.forEach((b, k) => b.forEach(j => freq[j] += y[k]));
   const fs = freq.reduce((a,b)=>a+b,0) || 1; for (let j=0;j<m;j++) freq[j] /= fs;
   const lik = [...Array(m).keys()].filter(j => freq[j] > 0.05);
   const score = i => 0.5 * V[i].reduce((a, v, j) => a + v * freq[j], 0) + 0.5 * Math.min(...lik.map(j => V[i][j]));
   const pos = best.slice().sort((a, b) => score(b) - score(a));      // ① 선봉 = 상대 선출 가능성으로 가중한 평균·최악 반반이 가장 높은 쪽
-  const safe = Math.max(...P.map(r => Math.min(...r)));
+  const worst = k => Ps.reduce((a, P, t) => a + ps[t] * Math.min(...P[k]), 0);   // 이 조합의 최악값(유형 가중)
+  const safe = worst(order[0]);
   // 혼합의 각 조합마다 선봉(같은 규칙): 2순위 조합을 낼 때도 누가 먼저인지
   const mix = order.filter(k => g.x[k] > 0.01).map(k => ({t: A[k], p: g.x[k], lead: A[k].reduce((b, i) => score(i) > score(b) ? i : b, A[k][0])}));
-  const their = B.map((b, k) => ({t: b, p: g.y[k]})).filter(r => r.p > 0.01).sort((a, b) => b.p - a.p);
-  return {V, pos, v: g.v, safe, mix, their, freq};
+  const their = B.map((b, k) => ({t: b, p: y[k]})).filter(r => r.p > 0.01).sort((a, b) => b.p - a.p);
+  return {V, pos, v: g.v, safe, mix, their, freq, nsc: sc.length};
 }
 
 // ── 그리기 ──
@@ -318,7 +354,7 @@ function renderResult(){
     <p class="legend">+1 = 만피로 이김 · 0 = 비등 · −1 = 못 건드리고 짐. 굵은 테두리 = 추천 3마리. 상대 이름에 마우스를 올리면 세트가 보입니다.</p></div>`;
   $("#jump").innerHTML = `<span class="ord">${r.pos.map((i, k) => k ? esc(name(i)) : `<b>${esc(name(i))}</b>`).join(" · ")}</span><span class="go">결과 보기 ↓</span>`;
   el.innerHTML = `<div class="order">${cards}</div>
-    <div class="stats"><span>게임 값 <b>${fmt(r.v)}</b></span><span>순수 보장값 <b>${fmt(r.safe)}</b></span><span class="muted">값은 비교용 점수이며 승률이 아닙니다</span></div>
+    <div class="stats"><span>게임 값 <b>${fmt(r.v)}</b></span><span>이 조합의 최악값 <b>${fmt(r.safe)}</b></span>${r.nsc > 1 ? `<span class="muted">상대 메가 ${r.nsc}가지 경우를 상대만 아는 게임으로 계산</span>` : ""}<span class="muted">비교용 점수(순위·차이만 의미 있음)이며 승률이 아닙니다</span></div>
     ${mix}${their}${resp}${heat}`;
 }
 // 주소 #v=키,키*,키! (* = 메가 확정, ! = 메가 아님) — 링크로 같은 상대를 공유
