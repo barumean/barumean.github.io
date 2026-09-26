@@ -64,7 +64,8 @@ _E = {}
 def _res_json(r):
     return {"spec": r["build"].spec(), "arch": r.get("arch"), "arch_scores": r.get("arch_scores", {}),
             "score": r["score"], "real_score": r["real_score"],
-            "real_top4": r["real_top4"], "moves": r["moves"], "items": r["items"]}
+            "real_top4": r["real_top4"], "moves": r["moves"], "items": r["items"],
+            "ability_scores": r.get("ability_scores", {})}
 
 
 def _opt_worker(key):

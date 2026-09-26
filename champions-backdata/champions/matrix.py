@@ -51,13 +51,18 @@ _W = {}
 def _init(my_specs, opp_specs, mirror_zero=True):
     from .data import load
     from .engine import Build
-    from .meta import make_alt
+    from .meta import make_alt, attach_variants
     D = load()
     _W["D"] = D
     _W["my"] = [Build(D, **s) for s in my_specs]
-    _W["opp"] = [Build(D, **s) for s in opp_specs]
-    for b in _W["opp"]:
-        b.alt = make_alt(D, b)                         # 스펙에는 변형이 없으므로 여기서 다시 붙인다
+    _W["opp"] = []
+    for s in opp_specs:                                # 스펙에는 변형이 없으므로 여기서 다시 붙인다
+        roles = s.get("_roles")
+        b = Build(D, **{k: v for k, v in s.items() if k != "_roles"})
+        b.alt = make_alt(D, b)
+        if roles:
+            attach_variants(D, b, [(Build(D, **rs), p) for rs, p in roles])
+        _W["opp"].append(b)
     _W["mz"] = mirror_zero
 
 
@@ -66,11 +71,19 @@ def _row(i):
     return [0.0 if (_W["mz"] and B.key == A.key) else blend(D, A.key, B.key, value_vs(A, B)) for B in _W["opp"]]
 
 
+def opp_spec(b):
+    """상대 세트 스펙 + 역할별 세트(있으면) — 작업 프로세스로 넘겨 다시 만든다."""
+    s = b.spec()
+    if b.roles and len(b.roles) > 1:
+        s["_roles"] = [(rb.spec(), p) for rb, p in b.roles]
+    return s
+
+
 def compute(my_builds, opp_builds, workers=None, mirror_zero=True):
     """행 = my_builds, 열 = opp_builds. 여러 프로세스로 나눠 계산.
     mirror_zero=True 면 같은 종끼리는 0(팀 탐색용 관례). 실전 선출 보드는 세트가 다르므로 False 로 실제 값을 쓴다."""
     my_specs = [b.spec() for b in my_builds]
-    opp_specs = [b.spec() for b in opp_builds]
+    opp_specs = [opp_spec(b) for b in opp_builds]
     workers = workers or max(1, (os.cpu_count() or 2) - 1)
     if workers == 1 or len(my_builds) * len(opp_builds) < 400:
         _init(my_specs, opp_specs, mirror_zero)
@@ -81,14 +94,14 @@ def compute(my_builds, opp_builds, workers=None, mirror_zero=True):
 
 # ── 민감도 분석용: 상성값을 구성 요소로 나눠 계산(M6) ──
 def _parts_row(i):
-    from .engine import duel_bayes
+    from .engine import duel_bayes, opp_types
     A = _W["my"][i]
     out = []
     for B in _W["opp"]:
         if B.key == A.key:
             out.append((0.0, 0.0, 0.0))
             continue
-        Bs, ps = ([B, B.alt], [0.5, 0.5]) if B.alt is not None else ([B], [1.0])
+        Bs, ps = opp_types(B) or ([B], [1.0])
         out.append((duel_bayes(A, Bs, ps, None), duel_bayes(A, Bs, ps, "A"), duel_bayes(A, Bs, ps, "B")))
     return out
 
@@ -98,7 +111,7 @@ def compute_parts(my_builds, opp_builds, workers=None):
     value = (1−2w)·N + w·PA + w·PB (w = 교체 등장 가중, 기본 0.2). 같은 종끼리는 0(팀 탐색 관례)."""
     import numpy as np
     my_specs = [b.spec() for b in my_builds]
-    opp_specs = [b.spec() for b in opp_builds]
+    opp_specs = [opp_spec(b) for b in opp_builds]
     workers = workers or max(1, (os.cpu_count() or 2) - 1)
     with ProcessPoolExecutor(workers, initializer=_init, initargs=(my_specs, opp_specs, True)) as ex:
         rows = list(ex.map(_parts_row, range(len(my_builds)), chunksize=2))

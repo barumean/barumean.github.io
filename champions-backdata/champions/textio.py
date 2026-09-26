@@ -57,8 +57,7 @@ def parse_line(D, line):
         elif p.replace("/", "").replace(" ", "").isdigit() and p.count("/") == 5:
             out["sp"] = [int(x) for x in p.split("/")]
         elif p.startswith("특성:") or p.lower().startswith("ability:"):
-            a = p.split(":", 1)[1].strip()
-            out["ability"] = a.lower().replace(" ", "-")
+            out["ability"] = D.ability(p.split(":", 1)[1])
         else:
             out["moves"] = [D.move(m) for m in p.replace("/", ",").split(",") if m.strip()]
     return out
@@ -79,7 +78,7 @@ def fmt_sp(sp):
 
 def fmt_build(D, b, with_stats=False):
     from .sets import arch_of
-    s = f"{D.name(b.form)} [{arch_of(b)}] @ {D.item_name(b.item)} | {NATURE_KO.get(b.nature, b.nature)} | {fmt_sp(b.sp)} | " + \
+    s = f"{D.name(b.form)} [{arch_of(b)}] @ {D.item_name(b.item)} | 특성:{D.ability_name(b.entry_ability)} | {NATURE_KO.get(b.nature, b.nature)} | {fmt_sp(b.sp)} | " + \
         ", ".join(D.move_name(m) for m in b.moves)
     if with_stats:
         s += f"   (실능 {'/'.join(str(x) for x in b.stats)})"
@@ -89,7 +88,7 @@ def fmt_build(D, b, with_stats=False):
 def party_line(D, b):
     """다시 입력으로 쓸 수 있는 한 줄."""
     from .sets import arch_of
-    return f"{D.name(b.key)} @ {D.item_name(b.item)} | {arch_of(b)} | {NATURE_KO.get(b.nature, b.nature)} | " + \
+    return f"{D.name(b.key)} @ {D.item_name(b.item)} | {arch_of(b)} | 특성:{D.ability_name(b.entry_ability)} | {NATURE_KO.get(b.nature, b.nature)} | " + \
         "/".join(str(x) for x in b.sp) + " | " + ", ".join(D.move_name(m) for m in b.moves)
 
 

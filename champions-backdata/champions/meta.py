@@ -43,11 +43,100 @@ def _mode(xs):
     return Counter(xs).most_common(1)[0][0] if xs else None
 
 
-def modal_build(D, key, mega=False, slots=(), stone=None):
-    """대표 세트 + (값을 못 매기는 기술이 있으면) 그 칸을 공격기로 바꾼 변형을 .alt 로 붙인다."""
+ROLE_MIN_SHARE, ROLE_MIN_N = 0.20, 3    # 역할별 세트로 나눌 기준: 그 종 빌드의 20% 이상이고 3벌 이상
+
+
+def classify_build(D, s):
+    """실제 빌드 한 벌(레플리카 슬롯) → 역할 키.
+    공격형은 공격 분류까지('physical:attacker', 'special:attacker', 'mixed:attacker'), 막이는 기능만
+    ('phys-wall', 'spec-wall', 'dual-wall'), 공격기가 거의 없으면 'support'.
+    성격·스탯포인트 문턱만으로 막이를 나누지 않고 기술 구성(공격기 수, 범주)도 본다."""
+    from .scrape import NATURES
+    sp = [s["customStats"][k] for k in _SPK]
+    n = NATURES.get(s.get("nature"))
+    inc = n[0] if n else None
+    moves = [D.MOVES[m] for m in s.get("moves") or [] if m in D.MOVES]
+    atk = [m for m in moves if classify(m) == "attack" and m["power"]]
+    inv = {"physical": sp[1] >= 16 or inc == "atk", "special": sp[3] >= 16 or inc == "spa"}
+    cnt = Counter(m["cat"] for m in atk if m["key"] not in ("body-press", "foul-play"))
+    off_c = [c for c in ("physical", "special") if cnt[c] and inv[c]]
+    if len(off_c) == 2 and min(cnt["physical"], cnt["special"]) >= 1 and min(sp[1], sp[3]) >= 8:
+        off = "mixed"
+    elif off_c:
+        off = max(off_c, key=lambda c: cnt[c])
+    else:
+        off = None
+    bulk_p = sp[2] >= 16 or inc == "def"
+    bulk_s = sp[4] >= 16 or inc == "spd"
+    if off and (max(sp[1], sp[3]) >= 24 or inc in ("atk", "spa", "spe") or not (bulk_p or bulk_s)):
+        return f"{off}:attacker"
+    if bulk_p and bulk_s:
+        return "dual-wall"
+    if bulk_p:
+        return "phys-wall"
+    if bulk_s:
+        return "spec-wall"
+    if len(atk) <= 1 and not off:
+        return "support"
+    return f"{off or 'physical'}:attacker"
+
+
+def _good_slots(D, slots):
+    return [s for s in slots if s.get("customStats") and sum(s["customStats"].values()) >= 60
+            and len([m for m in (s.get("moves") or []) if m in D.MOVES]) >= 3]
+
+
+def _entity_slots(D, key, mega, stone=None):
+    return [s for t in D.TEAMS for s in t["slots"] if s["pokemon"] in D.DEX and D.base_of(s["pokemon"]) == key
+            and ((s.get("item") in D.STONE) == bool(mega)) and (not stone or s.get("item") == stone)]
+
+
+def role_split(D, key, mega=False, slots=(), stone=None):
+    """[(역할, 그 역할의 슬롯들, 비율)] — 비율 20% 이상·3벌 이상인 역할만, 비율은 남은 역할끼리 다시 맞춘다."""
+    good = _good_slots(D, list(slots) if slots else _entity_slots(D, key, mega, stone))
+    if len(good) < 2 * ROLE_MIN_N:
+        return []
+    by = {}
+    for s in good:
+        by.setdefault(classify_build(D, s), []).append(s)
+    keep = [(r, ss) for r, ss in by.items() if len(ss) >= ROLE_MIN_N and len(ss) / len(good) >= ROLE_MIN_SHARE]
+    tot = sum(len(ss) for _, ss in keep)
+    return sorted(((r, ss, len(ss) / tot) for r, ss in keep), key=lambda x: -x[2])
+
+
+def attach_variants(D, b, roles):
+    """상대가 쓸 수 있는 세트들 [(Build, 확률)] 을 .variants 로 붙인다(상대만 아는 유형 → 베이지안 게임).
+    역할마다 값을 못 매기는 기술 칸을 공격기로 바꾼 변형(.alt)이 있으면 그 역할 확률을 반씩 나눈다."""
+    out = []
+    for rb, p in roles:
+        alt = make_alt(D, rb)
+        out += [(rb, p / 2), (alt, p / 2)] if alt is not None else [(rb, p)]
+    b.roles = roles
+    b.variants = out if len(out) > 1 else None
+
+
+def modal_build(D, key, mega=False, slots=(), stone=None, split=True):
+    """대표 세트. 한 종이 역할이 갈리면(드래펄트 물리/특수, 하마돈 물리막이/특수막이) 역할별 대표 세트를 따로 만들어
+    가장 많은 역할을 본체로, 전부를 .variants(확률 포함)로 붙인다. 값을 못 매기는 기술 칸의 변형(.alt)도 여기에."""
     b = _modal_build(D, key, mega, slots, stone)
-    if b is not None:
+    if b is None:
+        return None
+    b.alt = make_alt(D, b)
+    roles = []
+    if split:
+        for r, ss, p in role_split(D, key, mega, slots, stone):
+            rb = _modal_build(D, key, mega, ss, stone)
+            if rb is not None and usable(rb):
+                rb.label = f"meta:{r}"
+                roles.append((rb, p))
+    if len(roles) > 1:
+        tot = sum(p for _, p in roles)
+        roles = [(rb, p / tot) for rb, p in roles]
+        b = roles[0][0]
         b.alt = make_alt(D, b)
+    else:
+        roles = [(b, 1.0)]
+    attach_variants(D, b, roles)
     return b
 
 
@@ -57,14 +146,12 @@ def _modal_build(D, key, mega=False, slots=(), stone=None):
     stone 을 주면 그 스톤의 메가(리자몽 X/Y 등)로 고정."""
     u = D.USAGE.get(key)
     if not slots:
-        slots = [s for t in D.TEAMS for s in t["slots"] if s["pokemon"] in D.DEX and D.base_of(s["pokemon"]) == key
-                 and ((s.get("item") in D.STONE) == bool(mega)) and (not stone or s.get("item") == stone)]
+        slots = _entity_slots(D, key, mega, stone)
     slots = list(slots or ())
     if not u and not slots:
         return None
     stones = [stone] if stone else stones_of(D, key)
-    good = [s for s in slots if s.get("customStats") and sum(s["customStats"].values()) >= 60
-            and len([m for m in (s.get("moves") or []) if m in D.MOVES]) >= 3]
+    good = _good_slots(D, slots)
     if len(good) >= 3 or (not u and good):
         # 항목별 최빈값을 따로 뽑으면 아무도 안 쓰는 조합이 된다(성격·배분·도구·기술이 서로 다른 세트에서 옴).
         # → 실제 빌드 중 나머지와 가장 닮은 한 벌(메도이드)을 통째로 쓴다.

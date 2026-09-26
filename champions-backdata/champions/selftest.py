@@ -68,6 +68,60 @@ act(ks, g, M["kings-shield"], F, None)
 act(g, ks, M["dragon-claw"], F, ("move", M["kings-shield"]))
 check("킹실드에 접촉하면 공격 −1", g.boost[1] == -1, str(g.boost[1]))
 
+# ── 메타몽 ──
+from .engine import plans_vs, _side, speed
+dit = Build(D, "ditto", ["transform"], "choice-scarf", "imposter", "relaxed", (32, 0, 17, 0, 17, 0))
+dn = mk("dragonite", ["dragon-dance", "extreme-speed", "earthquake", "outrage"], "multiscale", None, "jolly")
+check("메타몽은 변신한 기술로 계획(용의춤 쌓기 포함)", ("setup", "dragon-dance", 1) in plans_vs(dit, dn))
+check("스카프 메타몽은 변신 상대보다 빠르다", speed(_side(dit, dn, 1.0), F) > speed(Side(dn), F))
+
+# ── 추가 특성 ──
+pr = mk("primarina", ["hydro-pump"], "torrent", None, "modest", (2, 0, 0, 32, 0, 32))
+tg = mk("garchomp", ["earthquake"], "rough-skin")
+p_full, p_low = Side(pr), Side(pr)
+p_low.hp = p_low.maxhp / 3
+check("급류: HP 1/3 이하 물 기술 ×1.5",
+      abs(damage(p_low, Side(tg), M["hydro-pump"], F) / damage(p_full, Side(tg), M["hydro-pump"], F) - 1.5) < 0.05)
+st_ = Side(mk("archaludon", ["body-press"], "stamina", None, "impish", (32, 0, 32, 0, 2, 0)))
+act(Side(tg), st_, M["earthquake"], F, None)
+check("지구력: 맞으면 방어 +1", st_.boost[2] == 1, str(st_.boost[2]))
+sv = Side(mk("serperior", ["leaf-storm"], "contrary", None, "timid", (2, 0, 0, 32, 0, 32)))
+act(sv, Side(tg), M["leaf-storm"], F, None)
+check("심술꾸러기: 리프스톰 뒤 특공 +2", sv.boost[3] == 2, str(sv.boost[3]))
+gv = Side(mk("gardevoir", ["moonblast"], "trace", None, "timid", (2, 0, 0, 32, 0, 32)))
+gy = Side(mk("gyarados", ["waterfall"], "intimidate", None, "adamant"))
+_setup_field(gv, gy, Field())
+check("트레이스로 복사한 위협도 발동", gv.ability == "intimidate" and gy.boost[1] == -1 and gv.boost[1] == -1,
+      f"{gv.ability} {gy.boost[1]} {gv.boost[1]}")
+
+# ── 챔피언스 룰(GAME_RULES_REVIEW) ──
+from .engine import PAR_SKIP, simulate, crit_rate
+check("마비 행동 불가 12.5%", PAR_SKIP == 0.125)
+bl1 = mk("hippowdon", ["slack-off"], "sand-stream", None, "bold", (32, 0, 32, 0, 2, 0))
+check("끝나지 않은 대결은 무승부 0", simulate(bl1, bl1, max_turns=3) == 0.0)
+check("급소율 단계: 기본 1/24, 스톤에지 1/8, +초점렌즈 1/2",
+      abs(crit_rate(Side(tg), M["earthquake"]) - 1 / 24) < 1e-12
+      and abs(crit_rate(Side(tg), M["stone-edge"]) - 1 / 8) < 1e-12
+      and abs(crit_rate(Side(mk("garchomp", ["stone-edge"], item="scope-lens")), M["stone-edge"]) - 1 / 2) < 1e-12)
+kg = Side(mk("kangaskhan", ["double-edge"], None, "kangaskhanite", "adamant"))
+sash = Side(mk("meowscarada", ["flower-trick"], "protean", "focus-sash", "jolly"))
+act(kg, sash, M["double-edge"], F, None)
+check("부자유친: 두 번째 타격이 기합의띠를 뚫는다", sash.hp <= 0, f"{sash.hp:.1f}")
+check("문포스 특공 하락은 설명문 10%", D.MOVES["moonblast"]["meta"].get("statChance") == 10)
+check("외형 변형(찌르호크 암컷)은 기본 종으로", D.mon("staraptor-female") == "staraptor")
+
+# ── 역할 분류 ──
+from .meta import classify_build, modal_build
+slot = lambda n, spv, mv: {"nature": n, "customStats": dict(zip(("hp", "attack", "defense", "spAtk", "spDef", "speed"), spv)),
+                            "moves": mv}
+check("역할 분류: 물리 공격·특수 공격·물리막이",
+      classify_build(D, slot("jolly", (2, 32, 0, 0, 0, 32), ["dragon-darts", "u-turn", "phantom-force", "sucker-punch"])) == "physical:attacker"
+      and classify_build(D, slot("timid", (2, 0, 0, 32, 0, 32), ["draco-meteor", "shadow-ball", "flamethrower", "u-turn"])) == "special:attacker"
+      and classify_build(D, slot("impish", (32, 0, 32, 0, 2, 0), ["earthquake", "slack-off", "stealth-rock", "yawn"])) == "phys-wall")
+hp_ = modal_build(D, "hippowdon")
+check("역할이 갈리는 종은 역할별 세트를 확률과 함께 가진다",
+      hp_.roles is not None and len(hp_.roles) >= 2 and abs(sum(p for _, p in hp_.variants) - 1) < 1e-9)
+
 # ── 결과 판정 ──
 check("60턴 미결(|v|<0.5)은 승이 아님", outcome(0.3) == 0.5 and outcome(0.6) == 1.0 and outcome(-0.5) == 0.0)
 

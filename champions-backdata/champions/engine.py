@@ -52,6 +52,8 @@ def type_eff(atk, defs):
 
 
 ROLL = 0.925
+PAR_SKIP = 0.125        # 챔피언스: 마비로 못 움직일 확률 12.5%(본가 25%)
+SLEEP_TURNS = 2         # 잠듦 행동 불가: 1턴 1/3, 2턴 2/3(챔피언스). 기대값·분기 모드는 최빈값 2
 MAX_TURNS = 60          # PP 가 다 떨어지면 발버둥이라 회복전도 이 안에 끝나는 경우가 많다
 STAGE = {-6: 2 / 8, -5: 2 / 7, -4: 2 / 6, -3: 2 / 5, -2: 2 / 4, -1: 2 / 3, 0: 1, 1: 1.5, 2: 2, 3: 2.5, 4: 3, 5: 3.5, 6: 4}
 _SK = {"attack": 1, "defense": 2, "special-attack": 3, "special-defense": 4, "speed": 5}
@@ -97,6 +99,7 @@ PROTECT = {"protect", "detect", "kings-shield", "spiky-shield", "baneful-bunker"
 SCREENS = {"reflect": "p", "light-screen": "s", "aurora-veil": "ps"}
 FIELD_WEATHER = {"rain-dance": ("rain", "damp-rock"), "sunny-day": ("sun", "heat-rock"),
                  "sandstorm": ("sand", "smooth-rock"), "snowscape": ("snow", "icy-rock")}
+WEATHER_ROCK = {w: r for w, r in FIELD_WEATHER.values()}
 FIELD_TERRAIN = {"grassy-terrain": "grassy", "psychic-terrain": "psychic", "electric-terrain": "electric",
                  "misty-terrain": "misty"}
 SEC_STATUS = {"burn": "brn", "paralysis": "par", "poison": "psn", "freeze": "frz", "sleep": "slp"}
@@ -140,7 +143,7 @@ def classify(mv):
 class Build:
     """한 마리의 세트. key 는 기본 폼 키, 메가 스톤을 들면 form 이 메가 폼이 된다."""
     __slots__ = ("D", "key", "form", "item", "ability", "entry_ability", "nature", "sp", "moves", "stats",
-                 "types", "blade", "mega", "label", "kinds", "alt")
+                 "types", "blade", "mega", "label", "kinds", "alt", "roles", "variants")
 
     def __init__(self, D, key, moves, item=None, ability=None, nature="serious", sp=(0, 0, 0, 0, 0, 0), label=None):
         self.D = D
@@ -161,6 +164,8 @@ class Build:
         self.label = label
         self.kinds = {m: classify(D.MOVES[m]) for m in self.moves}
         self.alt = None      # 상대 대표 세트: 값을 못 매기는 기술 칸을 공격기로 바꾼 변형(meta.make_alt)
+        self.roles = None    # 상대: 역할별 대표 세트 [(Build, 확률)] (meta.modal_build)
+        self.variants = None # 상대가 실제로 들고 올 수 있는 세트들 [(Build, 확률)] — 역할 × 변형. None 이면 self 하나
 
     def spec(self):
         return {"key": self.key, "item": self.item, "ability": self.entry_ability, "nature": self.nature,
@@ -196,7 +201,7 @@ class Side:
                  "recharge", "blade", "sitrus", "heals", "seeded", "turn", "plan_left", "status_done", "stats",
                  "types", "ability", "flinch", "air", "pp", "bound", "bind_frac", "rng", "protean_used",
                  "charged", "protected", "protect_last", "wish", "cprob", "shed", "miss", "br", "acted",
-                 "drowsy", "taunt", "encore", "encore_mv", "last", "last_kind", "scr_p", "scr_s", "sec", "field_done")
+                 "drowsy", "taunt", "encore", "encore_mv", "last", "last_kind", "scr_p", "scr_s", "sec", "field_done", "frz_t")
 
     def __init__(self, b, hpfrac=1.0):
         self.b = b
@@ -247,6 +252,7 @@ class Side:
         self.scr_s = 0             # 빛의장막(특수 반감) 남은 턴
         self.sec = {}              # 부가효과 누적(기대값·분기 모드): 효과별 0.5 에 이르면 발동
         self.field_done = False    # 필드 계획(벽·날씨·필드)을 이미 썼나
+        self.frz_t = 0             # 얼어 있던 턴 수(챔피언스: 최대 3턴)
 
     def st(self, i, ignore_boost=False):
         s = (self.b.blade if (self.blade and self.b.blade and i in (1, 2, 3, 4)) else self.stats)[i]
@@ -280,14 +286,53 @@ def weather_for(field, att):
     return field.weather
 
 
+# 위기 특성: HP 1/3 이하일 때 해당 타입 기술 ×1.5
+PINCH = {"torrent": "water", "blaze": "fire", "overgrow": "grass", "swarm": "bug"}
+# 트레이스로 복사할 수 없는 특성
+NO_TRACE = {"trace", "imposter", "stance-change", "disguise", "illusion", "zen-mode", "hunger-switch",
+            "zero-to-hero", "multitype", "schooling", "shields-down", "power-construct", "as-one"}
+
+
+def crit_mult(att):
+    return 2.25 if att.ability == "sniper" else 1.5
+
+
+CRIT_BY_STAGE = (1 / 24, 1 / 8, 1 / 2, 1.0)
+
+
+def crit_rate(att, mv=None):
+    """급소율 단계: 급소율 높은 기술 +1, 대운 +1, 초점렌즈·예리한손톱 +1 → 1/24, 1/8, 1/2, 확정."""
+    st = (mv["meta"].get("critRate") or 0) if mv else 0
+    st += (att.ability == "super-luck") + (att.item in ("scope-lens", "razor-claw"))
+    return CRIT_BY_STAGE[min(3, st)]
+
+
+def _sleep_turns(s):
+    """잠듦 행동 불가 턴(챔피언스): 확률 모드 1턴 1/3·2턴 2/3, 그 밖은 최빈값."""
+    if s.rng is not None:
+        return 1 if s.rng.random() < 1 / 3 else 2
+    return SLEEP_TURNS
+
+
+def unburdened(s):
+    """곡예(언버든): 지닌 도구를 잃으면(띠·열매 소모, 탁쳐서떨구기, 풍선 터짐) 스피드 ×2."""
+    return s.ability == "unburden" and s.b.item and not s.b.mega and s.item is None
+
+
 def speed(s, field):
     v = s.st(5)
     if s.item == "choice-scarf":
         v *= 1.5
-    if s.status == "par":
+    if s.status == "par" and s.ability != "quick-feet":
         v *= 0.5
+    if s.status and s.ability == "quick-feet":
+        v *= 1.5
     w = SPEED_WEATHER.get(s.ability)
     if w and field.weather == w:
+        v *= 2
+    if s.ability == "surge-surfer" and field.terrain == "electric":
+        v *= 2
+    if unburdened(s):
         v *= 2
     return v
 
@@ -393,18 +438,22 @@ def damage(att, dfd, mv, field, first_hit_check=True):
             A *= 1.5
     elif att.ability == "solar-power" and weather_for(field, att) == "sun":
         A *= 1.5
+    if PINCH.get(att.ability) == t and att.hp <= att.maxhp / 3:
+        A *= 1.5                                         # 급류·맹화·심록·벌레의알림
     phys_def = cat == "physical" or k in SPECIAL_VS_DEF
     di = 2 if phys_def else 4
     Dv = dfd.st(di, True) * stage(dfd, di, ign_d, -6, d_hi)
     if phys_def and dab == "fur-coat":
         Dv *= 2
+    if phys_def and dab == "marvel-scale" and dfd.status:
+        Dv *= 1.5                                        # 이상한비늘
     if field.weather == "sand" and not phys_def and "rock" in dfd.types:
         Dv *= 1.5
     if field.weather == "snow" and phys_def and "ice" in dfd.types:
         Dv *= 1.5
     d = (int(int(22 * pw * A / max(1.0, Dv)) / 50) + 2) * ROLL
     if crit:
-        d *= 1.5
+        d *= crit_mult(att)
     elif att.ability != "infiltrator" and ((cat == "physical" and dfd.scr_p) or (cat == "special" and dfd.scr_s)):
         d *= 0.5                                         # 리플렉터·빛의장막·오로라베일(급소·틈새포착은 무시)
     w = weather_for(field, att)
@@ -433,6 +482,10 @@ def damage(att, dfd, mv, field, first_hit_check=True):
         d *= 1.3
     if att.ability == "tinted-lens" and eff < 1:
         d *= 2
+    if att.ability == "parental-bond" and not (meta.get("minHits") or k in HIT_POWER or k == "population-bomb"):
+        d *= 1.25                                        # 부자유친: 1타 + 0.25배 2타
+    if att.ability == "analytic" and dfd.acted:
+        d *= 1.3                                         # 애널라이즈: 이번 턴 상대보다 늦게 행동
     if att.ability == "water-bubble" and t == "water":
         d *= 2
     if att.ability == "sand-force" and field.weather == "sand" and t in ("rock", "ground", "steel"):
@@ -485,6 +538,8 @@ def _first_hit_share(att, mv):
     k = mv["key"]
     if k in HIT_POWER:
         return 1 / HIT_POWER[k]
+    if att.ability == "parental-bond" and n_hits(att, mv) == 2 and not (mv["meta"].get("minHits")):
+        return 1 / 1.25
     n = n_hits(att, mv)
     return 1.0 / n if n > 1 else 1.0
 
@@ -499,7 +554,12 @@ def _acc(mv, att, field):
         return 1.0
     if mv["key"] in ("thunder", "hurricane") and field.weather == "rain":
         return 1.0
-    return a / 100.0
+    a /= 100.0
+    if att.ability == "compound-eyes":
+        a *= 1.3                                         # 복안
+    elif att.ability == "hustle" and mv["cat"] == "physical":
+        a *= 0.8                                         # 의욕: 물리 명중 ×0.8
+    return min(1.0, a)
 
 
 def will_hit(s, k, a):
@@ -582,7 +642,8 @@ def _threshold(s, o, mv, d):
         return (1 - hp / x) / 0.15
 
     crit_ok = mv["key"] not in ALWAYS_CRIT and o.ability not in ("battle-armor", "shell-armor")
-    p = frac(raw) * (23 / 24) + frac(raw * 1.5) / 24 if crit_ok else frac(raw)
+    cr = crit_rate(s, mv)
+    p = frac(raw) * (1 - cr) + frac(raw * crit_mult(s)) * cr if crit_ok else frac(raw)
     if p <= 1e-9 or p >= 1 - 1e-9:
         return d
     ko = s.br.pick("thr", [(True, p), (False, 1 - p)])
@@ -833,6 +894,8 @@ def choose(s, o, field, plan):
 
 
 def _apply_stat(s, changes, sign=1):
+    if s.ability == "contrary":
+        sign = -sign                                     # 심술꾸러기: 랭크 변화가 반대로
     for c in changes:
         i = _SK.get(c["stat"])
         if i:
@@ -849,6 +912,8 @@ def n_hits(att, mv):
     lo, hi = mv["meta"].get("minHits"), mv["meta"].get("maxHits")
     if lo and hi:
         return hi if (lo == hi or att.ability == "skill-link") else 3.1
+    if att.ability == "parental-bond" and mv["cat"] != "status":
+        return 2                                         # 부자유친: 두 번째 타격(0.25배)
     return 1
 
 
@@ -926,7 +991,7 @@ def _secondary(s, o, mv, field, dealt):
             else:
                 o.status = st
                 if st == "slp":
-                    o.sleep = s.rng.randint(1, 3) if s.rng is not None else 2
+                    o.sleep = _sleep_turns(s)
     # 풀죽음: 내가 먼저 움직였을 때만 의미가 있다(속이기는 따로 처리)
     fc = (meta.get("flinchChance") or 0) * mult
     if fc > 0 and k != "fake-out" and not shielded and not o.acted and o.hp > 0 and o.ability != "inner-focus":
@@ -979,7 +1044,7 @@ def act(s, o, mv, field, o_action, mult=1.0):
     k = mv["key"]
     kind = s.b.kinds.get(k) or classify(mv)
     if k in s.pp and s.charging != k:
-        s.pp[k] -= 1
+        s.pp[k] -= 2 if o.ability == "pressure" else 1       # 압박감: PP 2 소모
     s.last, s.last_kind = k, kind                          # 앙코르 대상
     if s.item == "choice-scarf" and not s.locked and kind == "attack":
         s.locked = k
@@ -1039,8 +1104,8 @@ def act(s, o, mv, field, o_action, mult=1.0):
         if s.rng is not None:
             r = s.rng
             d *= r.uniform(0.85, 1.0) / ROLL
-            if k not in ALWAYS_CRIT and o.ability not in ("battle-armor", "shell-armor") and r.random() < 1 / 24:
-                d *= 1.5
+            if k not in ALWAYS_CRIT and o.ability not in ("battle-armor", "shell-armor") and r.random() < crit_rate(s, mv):
+                d *= crit_mult(s)
             # 연속기 타수: damage() 는 기대 타수(2~5회 3.1타)로 계산하므로 확률 모드에서는 실제 타수를 뽑는다
             lo, hi = mv["meta"].get("minHits"), mv["meta"].get("maxHits")
             if k in HIT_POWER:                             # 트리플악셀: 2·3타도 타마다 명중, 빗나가면 거기서 끝
@@ -1067,6 +1132,12 @@ def act(s, o, mv, field, o_action, mult=1.0):
                 landed = min(nh, max(1.0, math.ceil(hp_before / (d / nh))))
         if dealt > 0 and o.hp > 0 and o.ability == "electromorphosis":
             o.charged = True
+        if dealt > 0 and o.hp > 0 and o.ability == "stamina":         # 지구력: 맞은 타마다 방어 +1
+            o.boost[2] = min(6, o.boost[2] + max(1, int(round(landed))))
+        if dealt > 0 and o.ability == "spicy-spray" and _sec_status_ok(o, s, "brn", field):
+            s.status = "brn"                               # 하바네로분출: 맞으면 공격한 쪽 화상
+        if dealt > 0 and o.hp > 0 and o.ability == "justified" and move_type(s, mv, field) == "dark":
+            o.boost[1] = min(6, o.boost[1] + 1)             # 정의의마음
         if dealt > 0 and o.hp > 0 and mv["cat"] == "physical" and o.ability == "weak-armor":
             n_wa = max(1, int(round(landed)))              # 깨어진갑옷: 맞은 타마다 방어 −1, 스피드 +2
             o.boost[2] = max(-6, o.boost[2] - n_wa)
@@ -1166,7 +1237,7 @@ def act(s, o, mv, field, o_action, mult=1.0):
             return
         o.status = {"burn": "brn", "paralysis": "par", "poison": "tox" if k == "toxic" else "psn", "sleep": "slp"}[ail]
         if o.status == "slp":
-            o.sleep = s.rng.randint(1, 3) if s.rng is not None else 2
+            o.sleep = _sleep_turns(s)
     elif kind == "phaze":
         o.boost = [0] * 6
         o.plan_left = 0
@@ -1255,30 +1326,38 @@ def end_of_turn(s, o, field):
 
 
 def _setup_field(a, b, field):
+    # 트레이스: 등장하면서 상대 특성을 복사(메가 전 등장 특성 기준). 복사한 위협도 발동한다.
+    ent = {id(a): a.b.entry_ability, id(b): b.b.entry_ability}
+    for x, y in ((a, b), (b, a)):
+        if x.b.entry_ability == "trace" and y.b.entry_ability not in NO_TRACE:
+            ent[id(x)] = y.b.entry_ability
+            if not x.b.mega:
+                x.ability = y.b.entry_ability
     # 위협(등장 특성) — 메가는 기본 폼 특성으로 등장한 뒤 메가진화한다
     for x, y in ((a, b), (b, a)):
-        if x.b.entry_ability == "intimidate" and y.b.entry_ability not in INTIM_BLOCK and y.item != "clear-amulet":
-            if y.b.entry_ability == "guard-dog":
+        ey = ent[id(y)]
+        if ent[id(x)] == "intimidate" and ey not in INTIM_BLOCK and y.item != "clear-amulet":
+            if ey == "guard-dog":
                 y.boost[1] += 1
-            elif y.b.entry_ability == "mirror-armor":
+            elif ey == "mirror-armor":
                 x.boost[1] -= 1                            # 미러아머: 위협을 되받아친다
             else:
-                y.boost[1] -= 1
-                if y.b.entry_ability == "defiant":
+                y.boost[1] -= 1 if ey != "contrary" else -1
+                if ey == "defiant":
                     y.boost[1] += 2
-                if y.b.entry_ability == "competitive":
+                if ey == "competitive":
                     y.boost[3] += 2
-                if y.b.entry_ability == "rattled":
+                if ey == "rattled":
                     y.boost[5] += 1
     # 날씨·필드 — 나중에 발동한 쪽이 이긴다. 등장 특성(빠른 순) → 턴 시작 메가진화(빠른 순)
     order = sorted((a, b), key=lambda s: (s.b.mega, -s.stats[5]))
     for s in order:
         w = WEATHER_AB.get(s.ability)
         if w:
-            field.weather, field.wturns = w, 5
+            field.weather, field.wturns = w, (8 if s.item == WEATHER_ROCK.get(w) else 5)
         t = TERRAIN_AB.get(s.ability)
         if t:
-            field.terrain, field.tturns = t, 5
+            field.terrain, field.tturns = t, (8 if s.item == "terrain-extender" else 5)
     field.aura = "fairy-aura" in (a.ability, b.ability)
 
 
@@ -1373,20 +1452,21 @@ def simulate(A, B, planA=("atk", None, 0), planB=("atk", None, 0), hpA=1.0, hpB=
                     if s.sleep == 0:
                         s.status = None
                     continue
-            if s.status == "frz":                          # 결빙: 행동 전 20% 로 녹는다(결정적 모드는 누적 규칙)
-                if _chance(s, "_thaw", 20):
-                    s.status = None
+            if s.status == "frz":                          # 결빙(챔피언스): 행동 전 25% 로 녹고, 3턴 얼어 있었으면 반드시 녹는다
+                s.frz_t += 1
+                if s.frz_t > 3 or _chance(s, "_thaw", 25):
+                    s.status, s.frz_t = None, 0
                 else:
                     continue
             if c[0] == "skip":
                 s.recharge = False
                 continue
             hs, ho = s.hp, o.hp
-            if s.status == "par" and rng is not None and rng.random() < 0.25:
+            if s.status == "par" and rng is not None and rng.random() < PAR_SKIP:
                 if trace is not None:
                     _tr(trace, a.turn + 1, s, o, "(마비로 못 움직임)", hs, ho)
                 continue
-            act(s, o, c[1], field, oc, 0.75 if (s.status == "par" and rng is None) else 1.0)  # 기대값 모드: 마비 25% → 피해 ×0.75
+            act(s, o, c[1], field, oc, (1 - PAR_SKIP) if (s.status == "par" and rng is None) else 1.0)  # 기대값 모드: 마비 12.5% → 피해 ×0.875
             s.acted = True
             if first is None:                     # 먼저 쓰러진 쪽이 진다(반동 동시 기절이면 맞은 쪽이 먼저)
                 first = o if o.hp <= 0 else (s if s.hp <= 0 else None)
@@ -1420,7 +1500,7 @@ def simulate(A, B, planA=("atk", None, 0), planB=("atk", None, 0), hpA=1.0, hpB=
         return 0.5 + 0.5 * ra
     if a.hp <= 0:
         return -(0.5 + 0.5 * rb)
-    return max(-0.5, min(0.5, 0.5 * (ra - rb)))
+    return 0.0                                          # 끝나지 않으면 무승부(챔피언스 랭크 시간 초과 규칙)
 
 
 def plans(b):
@@ -1442,6 +1522,12 @@ def plans(b):
         elif kd == "field":
             out.append(("field", k, 0))           # 벽·날씨·필드를 먼저 깔고 싸우기
     return list(dict.fromkeys(out))
+
+
+def plans_vs(X, Y):
+    """X 가 Y 를 상대할 때의 계획 후보. 괴짜(메타몽)는 변신한 뒤의 기술로 계획을 세운다
+    (예전에는 변신 전 기술 '변신' 하나로 계획을 만들어 상대가 칼춤을 쓰면 메타몽은 따라 쓰지 못했다)."""
+    return plans(transform(X, Y) if X.ability == "imposter" and Y.ability != "imposter" else X)
 
 
 W_NEUTRAL, W_SWITCH = 0.6, 0.2
@@ -1472,15 +1558,25 @@ def duel_bayes(A, Bs, ps, pre=None, mc=0, branch=None):
     return solve_bayes(Ms, ps)[0]
 
 
+def opp_types(B):
+    """상대 B 의 유형들 ([Build], [확률]) — 역할별 세트 × 값 못 매기는 기술 변형. 하나뿐이면 None."""
+    if B.variants:
+        return [v for v, _ in B.variants], [p for _, p in B.variants]
+    if B.alt is not None:
+        return [B, B.alt], [0.5, 0.5]
+    return None
+
+
 def value_vs(A, B, mc=0, branch=None, f=None):
     """상대 B 에 대한 값. B 가 시뮬이 값을 못 매기는 기술(스텔스록 등)을 들고 있으면 그 칸을 공격기로 바꾼 변형(alt)과
     반반의 두 유형으로 본다. 예전처럼 두 게임을 따로 풀어 평균하면 내가 상대 세트를 아는 것처럼 대응하게 되므로,
     내 계획은 하나로 두고 상대만 세트별로 대응하는 베이지안 게임으로 푼다(값이 조금 보수적이 된다).
     f=duel 이면 정면 한 항만(세트 탐색의 빠른 모드)."""
     f = f or value
-    if B.alt is None:
+    t = opp_types(B)
+    if t is None:
         return f(A, B, mc=mc, branch=branch)
-    Bs, ps = [B, B.alt], [0.5, 0.5]
+    Bs, ps = t
     if f is duel:
         return duel_bayes(A, Bs, ps, None, mc, branch)
     return (W_NEUTRAL * duel_bayes(A, Bs, ps, None, mc, branch) + W_SWITCH * duel_bayes(A, Bs, ps, "A", mc, branch)
@@ -1500,9 +1596,10 @@ def plan_matrix(A, B, hpA=1.0, hpB=1.0, pre_hit=False, mc=0, seed=0, branch=None
     if branch is None:
         branch = BRANCH
     import random
-    pa, pb = plans(A), plans(B)
-    eff = lambda X: X.stats[5] * (1.5 if (X.item == "choice-scarf" and not X.mega) else 1.0)
-    tie = eff(A) == eff(B)
+    pa, pb = plans_vs(A, B), plans_vs(B, A)
+    eff = lambda X, Y: ((Y.stats[5] if X.ability == "imposter" else X.stats[5])
+                        * (1.5 if (X.item == "choice-scarf" and not X.mega) else 1.0))
+    tie = eff(A, B) == eff(B, A)
     O, W = [], []
     for x in pa:
         row, wrow = [], []
