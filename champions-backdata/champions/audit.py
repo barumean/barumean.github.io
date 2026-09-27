@@ -242,7 +242,12 @@ def report(D, rows, model):
     rho = spearman(sim, jv)
     mae = sum(abs(a - b) for a, b in zip(sim, jv)) / len(ok)
     L.append("## 요약\n")
-    L.append(f"- 승패 방향 일치: **{len(agree)}/{len(ok)} ({len(agree) / len(ok) * 100:.0f}%)**")
+    k_, n_ = len(agree), len(ok)
+    z = 1.96                                               # Wilson 95% 구간(M2-4): 20쌍이면 구간이 넓다
+    c = (k_ + z * z / 2) / (n_ + z * z)
+    h = z * ((k_ * (n_ - k_) / n_ + z * z / 4) ** 0.5) / (n_ + z * z)
+    L.append(f"- 승패 방향 일치: **{k_}/{n_} ({k_ / n_ * 100:.0f}%)**, Wilson 95% [{max(0, c - h):.2f}, {min(1, c + h):.2f}] "
+             f"— 심판은 기준값(ground truth)이 아니며 같은 단순화를 쓰므로 공통 편향은 잡지 못합니다")
     L.append(f"- 값 스피어만 ρ(시뮬, 심판) = **{rho:+.3f}**" if rho is not None else "- ρ 계산 불가")
     L.append(f"- 평균 절대 차이 = {mae:.3f}")
     emp = [r for r in ok if r["emp"] is not None]

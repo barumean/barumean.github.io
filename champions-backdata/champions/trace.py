@@ -7,7 +7,7 @@ import argparse
 import sys
 
 from .data import load
-from .engine import duel, plans, simulate
+from .engine import duel, plans_vs, simulate
 from .meta import opponents
 
 
@@ -25,7 +25,7 @@ def show(D, A, B):
     print(f"A: {A}  실능 {A.stats}  특성 {A.ability}")
     print(f"B: {B}  실능 {B.stats}  특성 {B.ability}")
     print(f"duel(A,B) = {duel(A, B):+.3f}\n")
-    pa, pb = plans(A), plans(B)
+    pa, pb = plans_vs(A, B), plans_vs(B, A)
     print("계획 행렬 (행 A, 열 B):")
     for x in pa:
         print(f"  {str(x[0]) + ':' + str(x[1]):<28}", " ".join(f"{simulate(A, B, x, y):+.2f}" for y in pb))
