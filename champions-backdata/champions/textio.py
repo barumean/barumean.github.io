@@ -50,7 +50,7 @@ def parse_line(D, line):
                 out["arch"] = f"{a}:{r}" if r else a
             else:
                 out["arch"] = ARCH_WORD[p]
-        elif p.startswith("혼합") or p.startswith("비정형") or p == "변신형":
+        elif p.startswith("혼합") or p.startswith("비정형") or p == "변신형" or "막이" in p:
             continue                                   # 표시용 라벨은 입력에서 무시
         elif p in KO_NATURE or p.lower() in NATURES:
             out["nature"] = KO_NATURE.get(p, p.lower())
@@ -59,7 +59,24 @@ def parse_line(D, line):
         elif p.startswith("특성:") or p.lower().startswith("ability:"):
             out["ability"] = D.ability(p.split(":", 1)[1])
         else:
-            out["moves"] = [D.move(m) for m in p.replace("/", ",").split(",") if m.strip()]
+            names = [m for m in p.replace("/", ",").split(",") if m.strip()]
+            try:
+                out["moves"] = [D.move(m) for m in names]
+            except KeyError:
+                if len(names) == 1:                    # 한 단어면 기술인지 성격 오타인지 알 수 없다
+                    raise KeyError(f"알 수 없는 칸: '{p}' — 성격·기술·특성(특성:이름)·유형 어느 것도 아닙니다") from None
+                raise
+    # 검증: 스탯포인트 한 칸 0~32·합 66 이하, 배울 수 있는 기술만, 기술 4개 이하
+    if out["sp"] is not None:
+        if any(v < 0 or v > 32 for v in out["sp"]) or sum(out["sp"]) > 66:
+            raise ValueError(f"{D.name(key)}: 스탯포인트는 한 칸 0~32, 합 66 이하입니다 (입력 {out['sp']}, 합 {sum(out['sp'])})")
+    if out["moves"]:
+        if len(out["moves"]) > 4:
+            raise ValueError(f"{D.name(key)}: 기술은 4개까지입니다")
+        learn = D.DEX[key]["learnset"]
+        bad = [m for m in out["moves"] if learn and m not in learn]
+        if bad:
+            raise ValueError(f"{D.name(key)}: 배울 수 없는 기술 — {', '.join(D.move_name(m) for m in bad)}")
     return out
 
 

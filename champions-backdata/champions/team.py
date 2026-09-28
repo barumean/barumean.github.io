@@ -1,12 +1,14 @@
 """팀 구성(6마리) 탐색과 선출 게임.
 
 선출 게임: 서로 6마리를 보고 3마리씩 낸다. 내 3 (a) 대 상대 3 (b) 의 값
-    P(a,b) = ½·mean_{j∈b} max_{i∈a} V[i,j]   (상대 한 마리마다 내가 가진 최선의 답)
-           + ½·mean_{i∈a} min_{j∈b} V[i,j]   (내 한 마리마다 상대가 가진 최악의 카운터)
+    P(a,b) = mean_{i∈a, j∈b} V[i,j]   (기본, AGG_W = 0)
+    예전 식 ½·mean_j max_i V + ½·mean_i min_j V 는 AGG_W = 1 (카운터 재사용 가정이 과대평가를 만들어 바꿈)
 팀 대 팀 값 = (max_a min_b P + min_b max_a P) / 2   — 하한과 상한의 평균
 팀 점수     = 레플리카 싱글 팀(실제 제출된 팀) 전체에 대한 평균
 
-제약: 종 중복 없음, 도구 중복 없음(아이템 클로즈), 메가 스톤 1장 이하.
+제약: 종 중복 없음, 도구 중복 없음(아이템 클로즈), 메가 스톤 1장 이하, 마무리 포켓몬(총대장·성묘) 1마리 이하.
+상대 팀이 스톤을 둘 이상 들었으면(레플리카 팀의 76%) 배틀에서 메가진화는 한 번뿐이다 → 상대가 스톤 든 둘을 같이 내면
+그중 나에게 더 불리한 쪽만 메가, 다른 쪽은 기본형으로 계산한다(선출 보드와 같은 규칙).
 """
 import itertools
 import random
@@ -16,16 +18,43 @@ import numpy as np
 TRI = np.array(list(itertools.combinations(range(6), 3)))  # (20,3)
 
 
-def pick_values(M):
-    """M: (6, T, 6) 내 6 × 상대팀 T × 상대 6 → (T,) 팀 대 팀 값, 그리고 (20,20,T) P."""
+# 3:3 집계식: P(a,b) = (1−w)·mean_{i∈a,j∈b} V + w·(½·mean_j max_i V + ½·mean_i min_j V).
+# REPORT(09-27) 5-3: 순차 3:3 모델(Model B) 기준으로 ½max+½min(w=1)은 단순 평균(w=0)보다 후회가 +0.13 [0.02, 0.34]
+# 컸다(6/6팀). 카운터를 만피로 무한히 재사용한다는 가정이 과대평가를 만든다 → 기본 w=0. 민감도 분석에 w=1 변형을 둔다.
+AGG_W = 0.0
+
+
+def _pick_P(M, w=None):
+    w = AGG_W if w is None else w
     A = M[TRI]                                   # (20a, 3, T, 6)
     B = A[:, :, :, TRI]                          # (20a, 3, T, 20b, 3)
+    mean = B.mean(axis=(1, 4))                   # (20a, T, 20b)
+    if w <= 0:
+        return mean
     ans = B.max(axis=1).mean(axis=-1)            # (20a, T, 20b)
     cnt = B.min(axis=-1).mean(axis=1)            # (20a, T, 20b)
-    P = 0.5 * (ans + cnt)
+    return (1 - w) * mean + w * 0.5 * (ans + cnt)
+
+
+def pick_values(M, alt=None):
+    """M: (6, T, 6) 내 6 × 상대팀 T × 상대 6 → (T,) 팀 대 팀 값, 그리고 (20,20,T) P.
+    alt = (M1, M2, both): 스톤 든 두 칸 중 하나만 메가인 두 변형과, 상대 조합이 두 칸을 모두 포함하는지 (T, 20b).
+    두 칸을 모두 낸 조합은 상대가 나에게 더 불리한 쪽을 메가진화한다."""
+    P = _pick_P(M)
+    if alt is not None:
+        M1, M2, both = alt
+        Pm = np.minimum(_pick_P(M1), _pick_P(M2))
+        P = np.where(both[None, :, :], Pm, P)
     lower = P.min(axis=2).max(axis=0)            # (T,)
     upper = P.max(axis=0).min(axis=1)            # (T,)
     return 0.5 * (lower + upper), P
+
+
+def _closer_card(c):
+    """마무리 포켓몬 카드(총대장·성묘). 1:1 값은 '동료 2마리가 쓰러진 뒤 마지막에 나옴'으로 계산하므로
+    한 팀에 둘이면 둘 다 그 보너스를 받는 이중 계산이 된다."""
+    sp = c.get("spec") or {}
+    return sp.get("ability") == "supreme-overlord" or "last-respects" in (sp.get("moves") or [])
 
 
 class TeamSearch:
@@ -39,12 +68,33 @@ class TeamSearch:
         self.opp_ids = opp_ids
         self.cache = {}
         self._exact = {}
+        self._mega_variants()
+
+    def _mega_variants(self):
+        """스톤 2개 이상인 상대 팀: 앞의 두 메가 칸 p, q 에 대해 'p 만 메가'(q 는 기본형), 'q 만 메가' 열 배열과
+        상대 3마리 조합(20)마다 두 칸을 모두 포함하는지 표시. 기본형 개체가 없으면(스톤 채용률 100%) 그대로 둔다."""
+        col = {e: i for i, e in enumerate(self.opp_ids)}
+        T1, T2 = self.T.copy(), self.T.copy()
+        both = np.zeros((len(self.T), len(TRI)), dtype=bool)
+        for t, row in enumerate(self.T):
+            megas = [p for p in range(6) if str(self.opp_ids[row[p]]).endswith("@mega")
+                     and str(self.opp_ids[row[p]])[:-5] in col]
+            if len(megas) < 2:
+                continue
+            p, q = megas[:2]
+            T1[t, q] = col[str(self.opp_ids[row[q]])[:-5]]
+            T2[t, p] = col[str(self.opp_ids[row[p]])[:-5]]
+            both[t] = [(p in tri) and (q in tri) for tri in TRI]
+        self.multi = both.any(axis=1)
+        self.T1, self.T2, self.both = T1, T2, both
 
     def team_values(self, idx, exact=False):
         """상대 팀마다 선출 게임 값. exact=False 는 순수전략 하한·상한 평균(탐색용, 빠름),
         exact=True 는 20×20 행렬 게임의 혼합전략 균형값(최종 후보 재정렬용)."""
-        M = self.V[np.array(idx)][:, self.T]                  # (6, T, 6)
-        approx, P = pick_values(M)
+        Vi = self.V[np.array(idx)]
+        M = Vi[:, self.T]                                     # (6, T, 6)
+        alt = (Vi[:, self.T1], Vi[:, self.T2], self.both) if self.multi.any() else None
+        approx, P = pick_values(M, alt)
         if not exact:
             return approx
         key = tuple(sorted(idx))
@@ -77,6 +127,8 @@ class TeamSearch:
         items = [c["item"] for c in cs if c["item"]]
         if len(set(items)) < len(items):
             return False
+        if sum(_closer_card(c) for c in cs) > 1:
+            return False                                   # 마무리 포켓몬은 한 팀에 하나 — 마지막은 한 마리뿐
         return sum(c["mega"] for c in cs) <= 1
 
     def search(self, must=(), restarts=4, seed=7, log=None):

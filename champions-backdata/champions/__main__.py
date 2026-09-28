@@ -104,6 +104,27 @@ def cmd_team(a):
     tie = [r for r in rows if r[0] == top_t or ts.paired_z(top_t, r[0]) < 2.0]
     # 기본은 값이 가장 높은 팀. 동률 집단 안에 무답 노출이 그보다 1%p 이상 작은 팀이 있으면 그중 값이 가장 높은 팀.
     # (예전 round() 규칙은 0.7%p 차이를 1%p 로 올려 1위 확률 61% 팀 대신 2% 팀을 골랐다)
+    # 동률 집단 안에서는 표본이 얇은 멤버(싱글 60위 밖·레플리카 5팀 미만)가 가장 적은 팀들만 남긴다.
+    # 값 차이가 표본오차 안이면 '거의 우연히 1위'라서, 상대 세트·승패 신호가 적은 포켓몬에 기대는 쪽을 피한다.
+    nrep = {}
+    for t in D.TEAMS:
+        for k in {D.base_of(s["pokemon"]) for s in t["slots"] if s["pokemon"] in D.DEX}:
+            nrep[k] = nrep.get(k, 0) + 1
+    is_thin = lambda c: (D.RANK.get(c["key"]) or 999) > 60 or nrep.get(c["key"], 0) < 5
+    n_thin = lambda t: sum(is_thin(cards[i]) for i in t)
+    fewest = min(n_thin(r[0]) for r in tie)
+    tie = [r for r in tie if n_thin(r[0]) == fewest]
+    # 점수가 같으면(동률 집단) 타입이 덜 겹치는 팀 → 싱글 순위가 높은 포켓몬으로 이뤄진 팀(멤버 순위 평균) 순으로 우선.
+    # 그다음 무답 노출이 1%p 이상 작은 팀, 그다음 값.
+    def type_overlap(t):
+        from collections import Counter
+        c = Counter(ty for i in t for ty in Build(D, **cards[i]["spec"]).types)
+        return sum(n - 1 for n in c.values() if n > 1)      # 같은 타입이 k마리면 k−1 만큼 감점
+    least = min(type_overlap(r[0]) for r in tie)
+    tie = [r for r in tie if type_overlap(r[0]) == least]
+    mean_rank = lambda t: float(np.mean([D.RANK.get(cards[i]["key"]) or 300 for i in t]))
+    best_rank = min(mean_rank(r[0]) for r in tie)
+    tie = [r for r in tie if mean_rank(r[0]) <= best_rank + 1e-9]
     top_r = max(tie, key=lambda r: r[1])
     safer = [r for r in tie if ts.gap(list(r[0])) <= ts.gap(list(top_r[0])) - 0.01]
     pick = max(safer, key=lambda r: r[1]) if safer else top_r
@@ -120,16 +141,12 @@ def cmd_team(a):
         L.append(party_line(D, Build(D, **cards[i]["spec"])))
     L.append("```\n")
     L.append("```")
-    nrep = {}
-    for t in D.TEAMS:
-        for k in {D.base_of(s["pokemon"]) for s in t["slots"] if s["pokemon"] in D.DEX}:
-            nrep[k] = nrep.get(k, 0) + 1
     for i in pick[0]:
         c = cards[i]
         b = Build(D, **c["spec"])
         L.append(f"{fmt_build(D, b, True)}   (메타 상대 점수 {c['score']:+.3f} · 싱글 {D.RANK.get(c['key'], '-')}위 · 레플리카 {nrep.get(c['key'], 0)}팀)")
     L.append("```\n")
-    thin = [c for c in (cards[i] for i in pick[0]) if (D.RANK.get(c["key"]) or 999) > 60 or nrep.get(c["key"], 0) < 5]
+    thin = [c for c in (cards[i] for i in pick[0]) if is_thin(c)]
     if thin:
         L.append("⚠ 표본이 얇은 멤버: " + ", ".join(f"{D.name(c['key'])}(싱글 {D.RANK.get(c['key'], '-')}위, 레플리카 {nrep.get(c['key'], 0)}팀)" for c in thin)
                  + " — 상대 세트·승패 신호가 적어 값의 불확실성이 큽니다. 아래 후보 표의 대안과 같이 보세요.\n")
@@ -343,22 +360,20 @@ def cmd_pick(a):
     L += [f"  {i + 1}. {fmt_build(D, b)}" for i, b in enumerate(mine)]
     L.append("\n상대: " + ", ".join(D.name(k) for k in opp_keys) + "\n")
     nm = lambda t, side: "/".join(D.name(mine[i].form) if side == 0 else D.name(opp_keys[i]) for i in t)
-    L.append(f"## 내보낼 3마리: **{nm(r['best'], 0)}**  (게임 값 {r['best_value']:+.2f} · 이 조합의 최악값 {r['best_worst']:+.2f})")
+    L.append(f"## 한 조합만 낸다면: **{nm(r['best'], 0)}**  (보장값 {r['best_worst']:+.2f} — 상대가 최선으로 대응해도 이만큼)")
+    lp = " · ".join(f"{D.name(mine[i].form)} {p * 100:.0f}%" for i, p in r["lead_scores"] if p > 0.005)
+    L.append(f"## 선봉: **{D.name(mine[r['lead']].form)}**  (선봉 게임 혼합: {lp})\n")
     if r["n_scenarios"] > 1:
-        L.append(f"상대 메가 가능성 {r['n_scenarios']}가지(누가 메가인지·없음)를 상대는 알고 나는 모르는 게임으로 풀었습니다.")
-    if r["safe_trio"] != r["best"]:
-        L.append(f"최악값이 가장 좋은 조합(가장 안전한 선택): {nm(r['safe_trio'], 0)} ({r['safe_value']:+.2f})")
-    L.append(f"## 선봉: **{D.name(mine[r['lead']].form)}**\n")
-    if len(r["mix"]) > 1:
-        L.append("선출 혼합(균형에서 각 조합을 낼 비율 — 한 조합만 고집하면 읽힌다): "
-                 + " · ".join(f"{nm(t, 0)} (선봉 {D.name(mine[ld].form)}) {p * 100:.0f}%" for t, p, ld in r["mix"]))
+        L.append(f"상대가 스톤을 든 조합 {r['n_scenarios']}가지(1~2마리, 드물게 없음)를 상대는 알고 나는 모르는 게임으로 풀었습니다. 스톤 든 두 마리를 함께 내면 상대는 더 유리한 쪽을 메가진화합니다.")
+    L.append(f"균형(섞어 낼 때) 게임 값 {r['best_value']:+.2f}. 조합을 섞어 내면 읽히지 않습니다 — 비율: "
+             + " · ".join(f"{nm(t, 0)} (선봉 {D.name(mine[ld].form)}) {p * 100:.0f}%" for t, p, ld in r["mix"]))
     L.append("상대 선출 예상(균형): " + " · ".join(f"{nm(t, 1)} {p * 100:.0f}%" for t, p in r["their_mix"]))
     L.append("최악값 기준 차선: " + " · ".join(f"{nm(t, 0)} ({v:+.2f})" for t, v in r["alts"]) + "\n")
     hdr = ["상대 ↓ / 나 →"] + [D.name(b.form) for b in mine] + ["최선의 답"]
     rows = []
     for j, k in enumerate(opp_keys):
         best = int(V[:, j].argmax())
-        rows.append([D.name(k) + (f" (메가 {sum(w for b, w in r['opp'][j][1] if b.mega) * 100:.0f}%)" if any(b.mega for b, _ in r["opp"][j][1]) else "")]
+        rows.append([D.name(k) + (f" (스톤 {r['mega_marg'][j] * 100:.0f}%)" if r["mega_marg"][j] > 0.005 else "")]
                     + [f"{V[i, j]:+.2f}" for i in range(len(mine))] + [D.name(mine[best].form)])
     L.append(table(rows, hdr))
     risky = [opp_keys[j] for j in range(len(opp_keys)) if (V[list(r["best"]), j] >= 0).sum() < 1]
@@ -386,7 +401,7 @@ def cmd_switch(a):
     if a.active:
         ak = D.base_of(D.mon(a.active))
         active = next((i for i, b in enumerate(mine) if b.key == ak), None)
-    rows = switch(D, list(zip(mine, hp)), ob, a.opp_hp / 100, active, a.mc)
+    rows = switch(D, list(zip(mine, hp)), ob, a.opp_hp / 100, active, a.mc, free=a.after_faint)
     L = [f"# 교체 추천 — 상대 {D.name(ob.form)} (HP {a.opp_hp:.0f}%)\n", f"상대 추정 세트: {ob}\n"]
     L.append(table([[D.name(mine[i].form), f"{hp[i] * 100:.0f}%", "그대로 싸움" if st else "교체해서 들어감", f"{v:+.2f}", f"{p * 100:.0f}%"]
                     for i, v, st, p in rows],
@@ -402,7 +417,8 @@ def cmd_switch(a):
 SENS_VARIANTS = [("기준(λ 0.2 · 교체 0.2 · 선형)", 0.2, 0.2, "linear"),
                  ("실전 신호 λ = 0", 0.0, 0.2, "linear"), ("실전 신호 λ = 0.4", 0.4, 0.2, "linear"),
                  ("교체 등장 가중 0(정면만)", 0.2, 0.0, "linear"), ("교체 등장 가중 0.1", 0.2, 0.1, "linear"),
-                 ("교체 등장 가중 0.3", 0.2, 0.3, "linear"), ("효용 척도: 승패 부호만", 0.2, 0.2, "sign")]
+                 ("교체 등장 가중 0.3", 0.2, 0.3, "linear"), ("효용 척도: 승패 부호만", 0.2, 0.2, "sign"),
+                 ("3:3 집계: 예전 식(½max+½min)", 0.2, 0.2, "linear", 1.0)]
 
 
 def cmd_sensitivity(a):
@@ -422,8 +438,10 @@ def cmd_sensitivity(a):
     chk = combine(D, ck, ok, N, PA, PB)
     _log(f"[sensitivity] 구성 요소로 다시 만든 기준 행렬과 캐시 행렬의 최대 차이 {float(np.abs(chk - V0).max()):.4f}")
     rows, found = [], []
-    for name, lam, w, scale in SENS_VARIANTS:
+    import champions.team as team_mod
+    for name, lam, w, scale, *agg in SENS_VARIANTS:
         V = combine(D, ck, ok, N, PA, PB, lam, w, scale)
+        team_mod.AGG_W = agg[0] if agg else 0.0
         ts = TeamSearch(cards, V, ids, teams, ow)
         res = ts.search((), restarts=a.restarts)
         cand = list(dict.fromkeys([t for t, _ in res] + [t for t, _ in ts.neighbors(list(res[0][0]), k=8)]))[:16]
@@ -577,6 +595,7 @@ def main():
     s.add_argument("--opp", required=True)
     s.add_argument("--opp-hp", type=float, default=100)
     s.add_argument("--opp-is-mega", action="store_true")
+    s.add_argument("--after-faint", action="store_true", help="내 포켓몬이 쓰러진 뒤 내보내기(교체 등장 한 방 없음)")
     s.add_argument("--mc", type=int, default=64, help="확률 모드 판수 (승률 계산)")
     s = sub.add_parser("ui")
     s.add_argument("--party", help="기본: out/recommended_party.txt")
@@ -605,8 +624,12 @@ def main():
          "switch": cmd_switch, "check": cmd_check, "audit": cmd_audit, "review": cmd_review, "ui": cmd_ui,
          "sensitivity": cmd_sensitivity}[a.cmd](a)
     except KeyError as e:
-        if "찾을 수 없음" in str(e):
-            raise SystemExit("입력 오류: " + str(e).strip("'\""))
+        if "찾을 수 없음" in str(e) or "알 수 없는 칸" in str(e):
+            raise SystemExit("입력 오류: " + str(e).strip("'\"")) from e
+        raise
+    except ValueError as e:
+        if "스탯포인트" in str(e) or "배울 수 없는" in str(e) or "기술은 4개" in str(e):
+            raise SystemExit("입력 오류: " + str(e)) from e
         raise
 
 

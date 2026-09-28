@@ -240,6 +240,9 @@ def run(max_mons=None, team_pages=None, delay=1.0, day=None, log=print):
         if n % 10 == 0:
             log(f"  [pokedex] {n}/{len(todo)}")
     log(f"[pokedex] {got}/{len(todo)}종 저장 → {out}")
+    # 수집 완료 표시 — data.latest_dir() 는 이 파일이 있는 날짜만 최신으로 쓴다
+    (out / "manifest.json").write_text(json.dumps({"pokemon": got, "todo": len(todo), "teams_file": True},
+                                                  ensure_ascii=False), encoding="utf-8")
     return out
 
 

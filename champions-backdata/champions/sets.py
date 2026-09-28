@@ -113,6 +113,17 @@ def type_label(key):
     return f"{ARCH_KO.get(a, a)[:2]} {ROLE_KO.get(r, '(역할 자유)')}"
 
 
+def wall_of(nature, sp):
+    """내구형이 무엇을 막는가: 방어 투자·성격으로 물리막이 / 특수막이 / 양면막이.
+    예전 표시 '물리 내구형'은 '물리 공격을 하는 내구형'이라는 뜻이라 물리막이로 오해됐다(특수막이 아머까오)."""
+    from .scrape import NATURES
+    n = NATURES.get(nature)
+    inc = n[0] if n else None
+    p = sp[2] >= 16 or inc == "def"
+    q = sp[4] >= 16 or inc == "spd"
+    return "양면막이" if p and q else "물리막이" if p else "특수막이" if q else "내구형"
+
+
 def arch_of(b):
     """완성된 세트의 유형 판정(표시용): '물리 공격형' 등. 투자·기술·도구가 어긋나면 '비정형(…)'."""
     D = b.D
@@ -122,6 +133,8 @@ def arch_of(b):
         if spread_fits(b.nature, b.sp, a) and moves_fit(D, b.moves, a):
             r = role_of(b.nature, b.sp, a)
             if r and (b.mega or item_fits(b.item, r, b.nature, b.sp)) and item_moves_ok(D, b.item, b.moves):
+                if r == "tank":
+                    return f"{wall_of(b.nature, b.sp)} ({ARCH_KO[a][:2]} 공격)"
                 return f"{ARCH_KO[a][:2]} {ROLE_KO[r]}"
             return f"비정형({ARCH_KO[a][:2]})"
     return "비정형(투자 불일치)"

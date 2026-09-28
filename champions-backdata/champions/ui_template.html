@@ -198,32 +198,42 @@ function solve(M){
 }
 function combos(n, k){ const out = []; const rec = (s, a) => { if (a.length === k){ out.push(a.slice()); return; } for (let i=s;i<n;i++){ a.push(i); rec(i+1, a); a.pop(); } }; rec(0, []); return out; }
 
-// 상대 메가 확률: 확정한 칸이 있으면 그 한 마리만, 아니면 스톤 채용률을 팀 안에서 합 1 이하로
-function megaProbs(){
-  const forced = slots.some(s => s.mode === "mega" && BY[s.k].pm !== undefined);
-  let p = slots.map(s => {
-    const o = BY[s.k]; if (o.pm === undefined) return 0;
-    if (s.mode === "mega") return 1; if (s.mode === "base" || forced) return 0; return o.pm;
-  });
-  if (!forced){ const t = p.reduce((a,b)=>a+b,0); if (t > 1) p = p.map(v => v / t); }
-  return p;
-}
-// '누가 메가인가'(또는 아무도 아님)별 상성 행렬 — pick.py mega_scenarios 와 같다. 확률로 먼저 섞지 않는다.
-function scenarios(){
-  const p = megaProbs(), base = ME.map((_, i) => slots.map(s => BY[s.k].v[i]));
+// 상대가 스톤을 든 조합(pick.py stone_sets 와 같다): 스톤 수 분포 K(레플리카 팀: 없음·1개·2개)와
+// 종별 스톤 채용률의 오즈로 조합 확률을 정한다. 메가 확정 칸이 있으면 그 한 마리만.
+function stoneSets(){
+  // 스톤 수 분포: 팀 안 메가 가능 종 수별(pick.py stone_count_dist), 없으면 전체
+  const KD = DATA.meta.K || {all: [0.08, 0.16, 0.76]};
+  const nC = Math.min(4, slots.filter(s => BY[s.k].pm !== undefined && BY[s.k].mv).length);
+  const K = Array.isArray(KD) ? KD : (KD[String(nC)] || KD.all);
+  const fm = slots.map(s => s.mode === "mega" && BY[s.k].pm !== undefined && !!BY[s.k].mv);
+  const anyF = fm.some(x => x);
+  const pm = slots.map((s, j) => { const o = BY[s.k]; if (o.pm === undefined || !o.mv || s.mode === "base") return 0; if (anyF && !fm[j]) return 0; return fm[j] ? 1 : o.pm; });
+  const cand = []; pm.forEach((p, j) => { if (p > 0) cand.push(j); });
+  const must = cand.filter(j => fm[j]);
+  const odds = j => { const q = Math.min(pm[j], 0.97); return q / (1 - q); };
   const out = [];
-  slots.forEach((s, j) => {
-    const o = BY[s.k];
-    if (p[j] > 1e-9 && o.mv){ const V = base.map(r => r.slice()); ME.forEach((_, i) => V[i][j] = o.mv[i]); out.push({p: p[j], V}); }
+  K.forEach((pk, k) => {
+    if (pk <= 0 || k > cand.length) return;
+    const subs = combos(cand.length, k).map(c => c.map(i => cand[i])).filter(S => must.every(j => S.includes(j)));
+    const ws = subs.map(S => S.reduce((a, j) => a * odds(j), 1)), t = ws.reduce((a, b) => a + b, 0);
+    if (t > 0) subs.forEach((S, i) => { if (ws[i] > 0) out.push({p: pk * ws[i] / t, S}); });
   });
-  const rest = 1 - out.reduce((a, s) => a + s.p, 0);
-  if (rest > 1e-9 || !out.length) out.push({p: Math.max(rest, 1e-9), V: base});
-  const t = out.reduce((a, s) => a + s.p, 0); out.forEach(s => s.p /= t);
-  return out;
+  if (!out.length) return [{p: 1, S: must}];
+  const t = out.reduce((a, s) => a + s.p, 0);
+  const kept = out.map(s => ({p: s.p / t, S: s.S})).filter(s => s.p > 1e-4);
+  const t2 = kept.reduce((a, s) => a + s.p, 0);           // 버린 뒤 다시 정규화
+  return kept.map(s => ({p: s.p / t2, S: s.S}));
 }
+// 칸별로 스톤을 들었을 확률(표시용)
+function megaProbs(){
+  const sc = stoneSets();
+  return slots.map((_, j) => sc.reduce((a, s) => a + (s.S.includes(j) ? s.p : 0), 0));
+}
+function baseV(){ return ME.map((_, i) => slots.map(s => BY[s.k].v[i])); }
+function megaV(c){ const V = baseV(); ME.forEach((_, i) => V[i][c] = BY[slots[c].k].mv[i]); return V; }
 function matrix(){                                            // 표시용 기대 상성
-  const sc = scenarios();
-  return ME.map((_, i) => slots.map((_, j) => sc.reduce((a, s) => a + s.p * s.V[i][j], 0)));
+  const p = megaProbs();
+  return ME.map((_, i) => slots.map((s, j) => { const o = BY[s.k]; return o.mv ? (1 - p[j]) * o.v[i] + p[j] * o.mv[i] : o.v[i]; }));
 }
 // 베이지안 게임(game.py solve_bayes 와 같은 이중 오라클): 나는 유형을 모르고 상대는 알고 고른다
 function solveBayes(Ps, ps){
@@ -246,30 +256,47 @@ function solveBayes(Ps, ps){
 }
 
 function analyze(){
-  const sc = scenarios(), n = ME.length, m = slots.length;
+  const sc = stoneSets(), n = ME.length, m = slots.length;
   const A = combos(n, Math.min(3, n)), B = combos(m, Math.min(3, m));
+  // 3:3 집계(team.py AGG_W 와 같다): 기본은 9개 대면의 단순 평균, w>0 이면 예전 ½max+½min 을 섞는다
+  const W = DATA.meta.agg || 0;
   const pickM = V => A.map(a => B.map(b => {
+    let mean = 0; for (const i of a) for (const j of b) mean += V[i][j]; mean /= a.length * b.length;
+    if (W <= 0) return mean;
     let ans = 0; for (const j of b){ let mx = -9; for (const i of a) mx = Math.max(mx, V[i][j]); ans += mx; }
     let cnt = 0; for (const i of a){ let mnv = 9; for (const j of b) mnv = Math.min(mnv, V[i][j]); cnt += mnv; }
-    return 0.5 * ans / b.length + 0.5 * cnt / a.length;
+    return (1 - W) * mean + W * (0.5 * ans / b.length + 0.5 * cnt / a.length);
   }));
-  const Ps = sc.map(s => pickM(s.V)), ps = sc.map(s => s.p);
+  // 스톤 조합별 선출 행렬: 상대 3마리 중 스톤 든 쪽이 둘이면 나에게 더 불리한 쪽을 메가진화한다
+  const Pc = {base: pickM(baseV())};
+  sc.forEach(s => s.S.forEach(c => { if (!(c in Pc)) Pc[c] = pickM(megaV(c)); }));
+  const Ps = sc.map(s => A.map((_, ai) => B.map((b, bi) => {
+    const cs = s.S.filter(c => b.includes(c));
+    return cs.length ? Math.min(...cs.map(c => Pc[c][ai][bi])) : Pc.base[ai][bi];
+  }))), ps = sc.map(s => s.p);
   const g = solveBayes(Ps, ps);
   const V = matrix();
   const y = B.map((_, k) => g.ys.reduce((a, yt, t) => a + ps[t] * yt[k], 0));
   const order = A.map((_, k) => k).sort((a, b) => g.x[b] - g.x[a]);
-  const best = A[order[0]];
   const freq = Array(m).fill(0); B.forEach((b, k) => b.forEach(j => freq[j] += y[k]));
   const fs = freq.reduce((a,b)=>a+b,0) || 1; for (let j=0;j<m;j++) freq[j] /= fs;
-  const lik = [...Array(m).keys()].filter(j => freq[j] > 0.05);
-  const score = i => 0.5 * V[i].reduce((a, v, j) => a + v * freq[j], 0) + 0.5 * Math.min(...lik.map(j => V[i][j]));
-  const pos = best.slice().sort((a, b) => score(b) - score(a));      // ① 선봉 = 상대 선출 가능성으로 가중한 평균·최악 반반이 가장 높은 쪽
-  const worst = k => Ps.reduce((a, P, t) => a + ps[t] * Math.min(...P[k]), 0);   // 이 조합의 최악값(유형 가중)
-  const safe = worst(order[0]);
-  // 혼합의 각 조합마다 선봉(같은 규칙): 2순위 조합을 낼 때도 누가 먼저인지
-  const mix = order.filter(k => g.x[k] > 0.01).map(k => ({t: A[k], p: g.x[k], lead: A[k].reduce((b, i) => score(i) > score(b) ? i : b, A[k][0])}));
+  const worst = k => Ps.reduce((a, P, t) => a + ps[t] * Math.min(...P[k]), 0);   // 이 조합의 보장값(유형 가중)
+  // 한 조합만 낸다면 = 보장값이 가장 좋은 조합(pick.py 와 같다). 균형의 최다 조합은 '확률 최대'일 뿐이다.
+  const ws = A.map((_, k) => worst(k));
+  const sk = ws.reduce((b, v, k) => v > ws[b] ? k : b, 0);
   const their = B.map((b, k) => ({t: b, p: y[k]})).filter(r => r.p > 0.01).sort((a, b) => b.p - a.p);
-  return {V, pos, v: g.v, safe, mix, their, freq, nsc: sc.length};
+  // 선봉 = 3×3 선봉 게임(상대 3마리는 상대만 앎 → 베이지안). 마무리 포켓몬(총대장·성묘)은 선봉 후보에서 뺀다.
+  const leadGame = t => {
+    const rows = t.filter(i => !ME[i].c).length ? t.filter(i => !ME[i].c) : t.slice();
+    const th = their.length ? their : [{t: B[y.reduce((b, v, k) => v > y[b] ? k : b, 0)], p: 1}];
+    const lg = solveBayes(th.map(o => rows.map(i => o.t.map(j => V[i][j]))), th.map(o => o.p));
+    const pr = {}; rows.forEach((i, k) => pr[i] = lg.x[k]);
+    return pr;
+  };
+  const lp = leadGame(A[sk]);
+  const pos = A[sk].slice().sort((a, b) => (lp[b] || 0) - (lp[a] || 0));     // ① 선봉 = 선봉 게임에서 비율이 가장 큰 쪽
+  const mix = order.filter(k => g.x[k] > 0.01).map(k => { const q = leadGame(A[k]); return {t: A[k], p: g.x[k], lead: +Object.keys(q).reduce((b, i) => q[i] > q[b] ? i : b)}; });
+  return {V, pos, v: g.v, safe: ws[sk], mix, their, freq, nsc: sc.length, lp};
 }
 
 // ── 그리기 ──
@@ -330,12 +357,13 @@ function renderResult(){
   const r = analyze(), V = r.V;
   const name = i => ME[i].n, oname = j => { const s = slots[j], o = BY[s.k]; return s.mode === "mega" && o.mn ? o.mn : o.n; };
   const labels = ["① 선봉", "② 대기", "③ 대기"];
+  const lpct = i => r.lp[i] !== undefined && r.lp[i] < 0.995 ? ` · 선봉 ${Math.round(r.lp[i] * 100)}%` : "";
   const cards = r.pos.map((i, k) => {
     const good = [...Array(slots.length).keys()].filter(j => V[i][j] >= 0.3).map(oname);
     return `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span>
-      <span class="sub">${esc(ME[i].item)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span></div>`;
+      <span class="sub">${esc(ME[i].item)}${lpct(i)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span></div>`;
   }).join("");
-  const mix = r.mix.length > 1 ? `<div class="block"><h2>선출 비율 (균형)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))} <span class="muted">· 선봉 ${esc(name(x.lead))}</span><div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
+  const mix = r.mix.length > 1 ? `<div class="block"><h2>섞어 낼 때 비율 (균형 — 읽히지 않게)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))} <span class="muted">· 선봉 ${esc(name(x.lead))}</span><div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
     <p class="legend">한 조합만 고집하면 읽힙니다. 1순위가 위 카드입니다.</p></div>` : "";
   const their = `<div class="block"><h2>상대가 낼 3마리 (예상)</h2><div class="mix">${r.their.slice(0,3).map(x => `<div class="row"><div>${esc(x.t.map(oname).join(' / '))}<div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div></div>`;
   const lead = r.pos[0];
@@ -354,7 +382,7 @@ function renderResult(){
     <p class="legend">+1 = 만피로 이김 · 0 = 비등 · −1 = 못 건드리고 짐. 굵은 테두리 = 추천 3마리. 상대 이름에 마우스를 올리면 세트가 보입니다.</p></div>`;
   $("#jump").innerHTML = `<span class="ord">${r.pos.map((i, k) => k ? esc(name(i)) : `<b>${esc(name(i))}</b>`).join(" · ")}</span><span class="go">결과 보기 ↓</span>`;
   el.innerHTML = `<div class="order">${cards}</div>
-    <div class="stats"><span>게임 값 <b>${fmt(r.v)}</b></span><span>이 조합의 최악값 <b>${fmt(r.safe)}</b></span>${r.nsc > 1 ? `<span class="muted">상대 메가 ${r.nsc}가지 경우를 상대만 아는 게임으로 계산</span>` : ""}<span class="muted">비교용 점수(순위·차이만 의미 있음)이며 승률이 아닙니다</span></div>
+    <div class="stats"><span>이 조합의 보장값 <b>${fmt(r.safe)}</b></span><span>섞어 낼 때 게임 값 <b>${fmt(r.v)}</b></span>${r.nsc > 1 ? `<span class="muted">상대가 스톤을 든 조합 ${r.nsc}가지(1~2마리)를 상대만 아는 게임으로 계산</span>` : ""}<span class="muted">비교용 점수(순위·차이만 의미 있음)이며 승률이 아닙니다</span></div>
     ${mix}${their}${resp}${heat}`;
 }
 // 주소 #v=키,키*,키! (* = 메가 확정, ! = 메가 아님) — 링크로 같은 상대를 공유

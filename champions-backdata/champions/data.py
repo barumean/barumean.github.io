@@ -18,8 +18,22 @@ RAW = ROOT / "data" / "raw"
 STAT_ORDER = ("hp", "attack", "defense", "spAttack", "spDefense", "speed")
 
 
+def _complete(p):
+    """수집이 끝난 날짜 폴더인가. 새 수집은 끝에 manifest.json 을 쓴다. 예전 폴더는 필수 파일과
+    포켓몬 파일 수(싱글 순위의 90% 이상)로 판정 — 수집 도중인 폴더를 최신으로 잡지 않게."""
+    if (p / "manifest.json").exists():
+        return True
+    if not all((p / f).exists() for f in ("dex.json", "tier.json", "replica_teams.json")):
+        return False
+    try:
+        n = len(json.loads((p / "tier.json").read_text(encoding="utf-8"))["formats"]["single"])
+    except (ValueError, KeyError):
+        return False
+    return len(list((p / "pokemon").glob("*.json"))) >= 0.9 * n
+
+
 def latest_dir():
-    days = sorted(p for p in RAW.iterdir() if p.is_dir() and p.name[:2] == "20" and (p / "dex.json").exists())
+    days = sorted(p for p in RAW.iterdir() if p.is_dir() and p.name[:2] == "20" and _complete(p))
     if not days:
         raise SystemExit("수집 데이터가 없습니다. 먼저 `python -m champions scrape` 를 실행하세요.")
     return days[-1]
@@ -103,7 +117,21 @@ class Data:
             seen.add(sig)
             self.TEAMS.append(t)
         self.TEAMS_RAW = sum(1 for t in teams if t["format"] == "SINGLE" and len(t["slots"]) == 6)
-        # 한글 이름 → 키
+        # 리전폼 이름: op.gg 는 히스이 폼에 기본 폼과 같은 한글 이름을 준다(미끄래곤·윈디·블레이범 등) →
+        # 이름이 겹치면 지역 접두어를 붙여 구분한다(표시·검색 모두). 모델은 원래 키로 따로 계산하고 있었다.
+        REGION = {"hisui": "히스이", "alolan": "알로라", "galarian": "가라르", "paldean": "팔데아"}
+        seen = {}
+        for k, p in self.DEX.items():
+            if not p["base_key"] and k not in self.CANON:
+                seen.setdefault(p["name"], []).append(k)
+        for name, ks in seen.items():
+            if len(ks) < 2:
+                continue
+            for k in ks:
+                reg = next((v for r, v in REGION.items() if f"-{r}" in k), None)
+                if reg and not self.DEX[k]["name"].startswith(reg):
+                    self.DEX[k]["name"] = f"{reg} {self.DEX[k]['name']}"
+        # 한글 이름 → 키. 접두어 없는 이름('미끄래곤')은 기본 폼, '히스이 미끄래곤'은 히스이 폼.
         self.BY_NAME = {}
         for k, p in self.DEX.items():
             self.BY_NAME.setdefault(p["name"].replace(" ", ""), k)

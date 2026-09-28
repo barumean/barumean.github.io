@@ -1,0 +1,33 @@
+test_G1_strictly_dominated (__main__.ToyGames.test_G1_strictly_dominated) ... ok
+test_G2_matching_pennies (__main__.ToyGames.test_G2_matching_pennies) ... ok
+test_G3_rps (__main__.ToyGames.test_G3_rps) ... ok
+test_G4_saddle (__main__.ToyGames.test_G4_saddle) ... ok
+test_G5_multiple_equilibria (__main__.ToyGames.test_G5_multiple_equilibria) ... ok
+test_G6_duplicates (__main__.ToyGames.test_G6_duplicates) ... ok
+test_G7_skew_symmetric (__main__.ToyGames.test_G7_skew_symmetric) ... ok
+test_G8_bayes (__main__.ToyGames.test_G8_bayes) ... ok
+test_bayes_random_2actions_vs_brute (__main__.ToyGames.test_bayes_random_2actions_vs_brute) ... ok
+test_bayes_random_pick_sized (__main__.ToyGames.test_bayes_random_pick_sized)
+선출 크기(20×20, 유형 2~8)에서 착취 가능성 인증(U−L)으로 확인 — 기준 LP 없이도 최적성 증명. ... ok
+test_degenerate_integer_games (__main__.ToyGames.test_degenerate_integer_games)
+{-1,0,1} 정수 행렬(동률·퇴화가 많음 — 선출 행렬의 max/min 합산도 동률이 잦다)에서 순환·반복 한도 문제가 없는지. ... ok
+test_independent_lp_cross_check (__main__.ToyGames.test_independent_lp_cross_check)
+독립 LP(tests/_lp.py, 2단계 단체법·블랜드)와 값 비교: 일반 게임 + G8 식의 베이지안 LP. ... ok
+test_permutation_invariance (__main__.ToyGames.test_permutation_invariance) ... ok
+test_random_vs_support_enum (__main__.ToyGames.test_random_vs_support_enum) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 31.824s
+
+OK
+| 게임 | 이론값 | solver 결과 | 잔차(착취·무차별) | 비고 |
+|---|---|---|---|---|
+| G1 강지배 | v=5/7=0.714286, x=(3/7,0,4/7), y=(3/7,4/7,0) | v=0.714286, x=[0.428571, 0.0, 0.571429], y=[0.428571, 0.571429, 0.0] | exploit 7.8e-16 · indiff 1.1e-15 | 지배 행 확률 0.0e+00, 지배 열 확률 0.0e+00 |
+| G2 동전 맞추기 | v=0, p=q=(½,½) | v=0.00e+00, x=[0.5, 0.5], y=[0.5, 0.5] | exploit 2.2e-16 · indiff 1.7e-16 |  |
+| G3 가위바위보 | v=0, 각 ⅓ | v=0.00e+00, x=[0.333333, 0.333333, 0.333333], y=[0.333333, 0.333333, 0.333333] | exploit 2.2e-16 · indiff 1.7e-16 |  |
+| G4 안장점 | v=2, x=e3, y=e2 | v=2.0, x=[0.0, 0.0, 1.0], y=[0.0, 1.0, 0.0] | exploit 0.0e+00 · indiff 0.0e+00 |  |
+| G5 다중 균형 | v=1, x∈{e1, (0,½,½), 혼합}, y=(½,½) | v=1.000000, x=[1.0, 0.0, 0.0], y=[0.5, 0.5] | exploit 0.0e+00 · indiff 0.0e+00 | 균형 조건만 확인 |
+| G6 복제 전략 | v=0 (RPS 와 같음) | 행 복제 v=0.00e+00, 열 복제 v=0.00e+00 | exploit 2.2e-16 · indiff 1.7e-16 | 복제 행 확률 합 0.3333 |
+| G7 대칭 A=−Aᵀ (9×9, seed 7) | v=0, x·y 모두 양쪽 균형 | v=-8.88e-16 | exploit 6.9e-16 · indiff 1.2e-15 | (y,x) 로 바꿔 넣어도 exploit 7.0e-16 |
+| G8 베이지안 | 손 풀이 v=−1.25, x=(½,½), y₁=(1,0), y₂=(0.3,0.7); 꺾임점 전수 v=-1.250000, x=[0.5, 0.5] | v=-1.250000, x=[0.5, 0.5], y_t=[[1.0, 0.0], [0.3, 0.7]] | U−L 2.2e-16 · 유형별 최적대응 틈 0.0e+00 | value(B) -1.2500 ≤ value(A: 기대행렬) -0.2000; x_A 의 실제 보장값 -1.7000 |
+

@@ -1,0 +1,112 @@
+C:\Users\goning\Documents\champions-backdata\tests\_fixtures.py:22: ResourceWarning: unclosed file <_io.TextIOWrapper name='C:\\Users\\goning\\Documents\\champions-backdata\\tests\\fixtures\\party_20260927.txt' mode='r' encoding='utf-8-sig'>
+  ps = parse_party(D, open(PARTY_FILE, encoding="utf-8-sig").read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+test_1v1_antisymmetry_known_end_of_turn (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_known_end_of_turn)
+결함 기록: 턴 종료 처리 순서가 라벨 A 먼저(모래바람 피해 ↔ 씨뿌리기 회복의 HP 상한). ... FAIL
+test_1v1_antisymmetry_known_speed_tie (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_known_speed_tie)
+결함 기록: 스피드 동률 쌍(분기 모드의 동률 갈래 1회 뒤 '번갈아' 규칙이 라벨 A 기준). ... FAIL
+test_1v1_antisymmetry_random_sample (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_random_sample)
+무작위 60쌍(seed 20260927) — 대부분(0.7% 제외)은 반대칭. ... FAIL
+test_3v3_perspective_engine (tests.test_phase6_properties.Engine.test_3v3_perspective_engine)
+같은 엔진으로 두 방향을 따로 계산해도 P_opp = −P_meᵀ (유형 없는 대표 세트). ... ok
+test_advise_permutation_invariance (tests.test_phase6_properties.Engine.test_advise_permutation_invariance)
+pick.advise: 내 파티·상대 순서를 바꿔도 게임 값과 추천 조합(세트 기준)이 같다. ... ok
+test_mirror_value_zero (tests.test_phase6_properties.Engine.test_mirror_value_zero)
+같은 세트끼리(자기 자신과) 1:1 값은 0 이어야 한다. ... FAIL
+test_symmetric_data_engine_value_zero (tests.test_phase6_properties.Engine.test_symmetric_data_engine_value_zero)
+내 파티 대 내 파티(같은 세트) → 게임 값 0. ... FAIL
+test_duplicate_strategy_invariance (tests.test_phase6_properties.Formula.test_duplicate_strategy_invariance) ... ok
+test_equilibrium_exploitability_zero (tests.test_phase6_properties.Formula.test_equilibrium_exploitability_zero) ... ok
+test_perspective_consistency_formula (tests.test_phase6_properties.Formula.test_perspective_consistency_formula) ... ok
+test_pokemon_order_permutation_invariance (tests.test_phase6_properties.Formula.test_pokemon_order_permutation_invariance)
+내 6마리·상대 6마리 순서를 바꿔도 게임 값이 같고, 추천 조합(원래 번호의 집합)이 같다. ... ok
+test_probability_normalization (tests.test_phase6_properties.Formula.test_probability_normalization) ... FAIL
+test_strictly_dominated_zero (tests.test_phase6_properties.Formula.test_strictly_dominated_zero) ... ok
+test_symmetric_data_value_zero (tests.test_phase6_properties.Formula.test_symmetric_data_value_zero)
+같은 6마리끼리(V 반대칭) → P 반대칭 → 게임 값 0, 양쪽 전략이 같다. ... ok
+test_team_search_value_permutation (tests.test_phase6_properties.Formula.test_team_search_value_permutation)
+팀 탐색 근사값(pick_values)도 순서에 무관. ... ok
+
+======================================================================
+FAIL: test_1v1_antisymmetry_known_end_of_turn (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_known_end_of_turn)
+결함 기록: 턴 종료 처리 순서가 라벨 A 먼저(모래바람 피해 ↔ 씨뿌리기 회복의 HP 상한).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 154, in test_1v1_antisymmetry_known_end_of_turn
+    self.assertAlmostEqual(self._anti(self.opps["venusaur@mega"], self.opps["tyranitar@mega"], branch=False), 0.0, delta=1e-9)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1.2897320390606835 != 0.0 within 1e-09 delta (1.2897320390606835 difference)
+
+======================================================================
+FAIL: test_1v1_antisymmetry_known_speed_tie (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_known_speed_tie)
+결함 기록: 스피드 동률 쌍(분기 모드의 동률 갈래 1회 뒤 '번갈아' 규칙이 라벨 A 기준).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 150, in test_1v1_antisymmetry_known_speed_tie
+    self.assertAlmostEqual(self._anti(self.opps["archaludon"], self.opps["ceruledge"]), 0.0, delta=1e-9)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: -1.2632225771797954 != 0.0 within 1e-09 delta (1.2632225771797954 difference)
+
+======================================================================
+FAIL: test_1v1_antisymmetry_random_sample (tests.test_phase6_properties.Engine.test_1v1_antisymmetry_random_sample)
+무작위 60쌍(seed 20260927) — 대부분(0.7% 제외)은 반대칭.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 146, in test_1v1_antisymmetry_random_sample
+    self.assertEqual(bad, [])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^
+AssertionError: Lists differ: [('snorlax', 'slowbro@mega', 0.016027227722772208)] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+('snorlax', 'slowbro@mega', 0.016027227722772208)
+
+- [('snorlax', 'slowbro@mega', 0.016027227722772208)]
++ []
+
+======================================================================
+FAIL: test_mirror_value_zero (tests.test_phase6_properties.Engine.test_mirror_value_zero)
+같은 세트끼리(자기 자신과) 1:1 값은 0 이어야 한다.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 160, in test_mirror_value_zero
+    self.assertEqual(bad, [])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^
+AssertionError: Lists differ: [('archaludon', -0.2865269461077844), ('mi[178 chars]076)] != []
+
+First list contains 6 additional elements.
+First extra element 0:
+('archaludon', -0.2865269461077844)
+
++ []
+- [('archaludon', -0.2865269461077844),
+-  ('mimikyu', 0.018750000000000003),
+-  ('basculegion-male', -0.3013215859030837),
+-  ('corviknight', 0.36515853658536596),
+-  ('dragonite', -0.3309517045454546),
+-  ('kangaskhan', 0.3676591981132076)]
+
+======================================================================
+FAIL: test_symmetric_data_engine_value_zero (tests.test_phase6_properties.Engine.test_symmetric_data_engine_value_zero)
+내 파티 대 내 파티(같은 세트) → 게임 값 0.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 179, in test_symmetric_data_engine_value_zero
+    self.assertAlmostEqual(solve(P_of(V))[0], 0.0, delta=TOL)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0.010454535489701655 != 0.0 within 1e-06 delta (0.010454535489701655 difference)
+
+======================================================================
+FAIL: test_probability_normalization (tests.test_phase6_properties.Formula.test_probability_normalization)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\goning\Documents\champions-backdata\tests\test_phase6_properties.py", line 52, in test_probability_normalization
+    self.assertAlmostEqual(sum(p for p, _ in sc), 1.0, delta=1e-9)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.9999901153435777) != 1.0 within 1e-09 delta (np.float64(9.884656422265437e-06) difference)
+
+----------------------------------------------------------------------
+Ran 15 tests in 13.292s
+
+FAILED (failures=6)
+exit=1

@@ -9,7 +9,9 @@ from pathlib import Path
 
 from .data import ROOT
 from .matrix import compute
-from .engine import usable
+from .engine import usable, is_closer
+from .pick import stone_count_dist
+from .team import AGG_W
 from .meta import modal_build, mega_prob, opponents, stones_of
 from .sets import arch_of
 
@@ -54,16 +56,19 @@ def build_payload(D, mine, log=print):
             mi += 1
         opps.append(o)
     opps.sort(key=lambda o: (-o["w"], o["r"] or 999))
-    me = [{"n": D.name(b.form), "k": b.key, "t": b.types, "a": arch_of(b), "item": D.item_name(b.item),
+    me = [{"n": D.name(b.form), "k": b.key, "t": b.types, "a": arch_of(b), "item": D.item_name(b.item), "c": is_closer(b),
            "nat": NATURE_KO.get(b.nature, b.nature), "sp": fmt_sp(b.sp), "mv": [D.move_name(m) for m in b.moves]}
           for b in mine]
     return {"me": me, "opps": opps, "types": {"c": tcol, "n": tname},
-            "meta": {"date": D.dir.name, "season": D.SEASON.upper(), "teams": len(D.TEAMS)}}
+            "meta": {"date": D.dir.name, "season": D.SEASON.upper(), "teams": len(D.TEAMS), "K": stone_count_dist(D), "agg": AGG_W}}
 
 
 def write(D, mine, out=None, log=print):
     payload = build_payload(D, mine, log)
-    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", json.dumps(payload, ensure_ascii=False))
+    js = json.dumps(payload, ensure_ascii=False)
+    # </script> 로 스크립트 밖으로 빠져나가지 않게, 줄 구분 문자(U+2028/2029)도 이스케이프
+    js = js.replace("</", "<\\/").replace(chr(0x2028), "\\u2028").replace(chr(0x2029), "\\u2029")
+    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", js)
     out = Path(out) if out else ROOT / "out" / "pick_board.html"
     out.write_text(html, encoding="utf-8")
     return out

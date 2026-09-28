@@ -1,2 +1,2 @@
-# 검증에 쓴 버전으로 고정(M9). Python 3.14.
-numpy==2.5.3
+# 검증: Python 3.14 + numpy 2.5.3. Python 3.11 + numpy 2.4 에서도 selftest 통과(코드 리뷰 09-27).
+numpy>=2.0,<3

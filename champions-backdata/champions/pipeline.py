@@ -57,6 +57,28 @@ def pool_keys(D, n=None, max_rank=MAX_RANK):
     return ks if n is None else ks[:n]
 
 
+def _atomic_write_text(f, text):
+    """임시 파일에 쓴 뒤 교체 — 쓰는 도중에 끊겨도 캐시가 깨지지 않게."""
+    tmp = f.with_name(f.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, f)
+
+
+def _load_npz(f):
+    """pickle 없이 읽는다(캐시 파일이 바뀌어도 코드가 실행되지 않게). 예전 형식(object 배열)이면 None → 다시 계산."""
+    try:
+        with np.load(f, allow_pickle=False) as z:
+            return {k: z[k] for k in z.files}              # object 배열은 여기서 ValueError
+    except ValueError:
+        return None
+
+
+def _atomic_savez(f, **arrays):
+    tmp = f.with_name(f.stem + ".tmp.npz")
+    np.savez_compressed(tmp, **arrays)
+    os.replace(tmp, f)
+
+
 # ── 세트 최적화 (병렬) ───────────────────────────────────────────
 _E = {}
 
@@ -101,7 +123,7 @@ def optimize_pool(D, keys, workers=None, log=print):
                 cache[k] = r
                 if n % 10 == 0 or n == len(todo):
                     log(f"  {n}/{len(todo)}")
-                    f.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+                    _atomic_write_text(f, json.dumps(cache, ensure_ascii=False))
     return {k: cache[k] for k in keys if k in cache}
 
 
@@ -132,8 +154,12 @@ def make_cards(D, sets):
         b = r["base"]
         s = b["spec"]
         cards.append({"id": f"{k}#{s['item']}", "key": k, "item": s["item"], "mega": False, "spec": s, "score": b["score"]})
-        from .sets import item_moves_ok
-        alts = [it for it, v in b["items"] if it != s["item"] and item_moves_ok(D, it, s["moves"])]
+        from .sets import item_moves_ok, item_fits
+        role = (b.get("arch") or ":").partition(":")[2] or None
+        # 2순위 도구도 역할 규칙을 지킨다(울퉁불퉁멧은 물리막이만, 공격 도구는 공격형만) — 예전에는 기술 조건만 봐서
+        # 특수막이 윈디에 울퉁불퉁멧 카드가 생겼다
+        alts = [it for it, v in b["items"] if it != s["item"] and item_moves_ok(D, it, s["moves"])
+                and (role not in ("attacker", "tank") or item_fits(it, role, s["nature"], s["sp"]))]
         if alts:
             s2 = dict(s, item=alts[0])
             v2 = dict(b["items"]).get(alts[0], b["score"])
@@ -169,12 +195,12 @@ def card_parts(D, cards, opps, workers=None, log=print):
     cid = [c["id"] for c in cards]
     oid = [e for e, _, _ in opps]
     if f.exists():
-        z = np.load(f, allow_pickle=True)
-        if list(z["cards"]) == cid and list(z["opps"]) == oid:
+        z = _load_npz(f)
+        if z is not None and list(z["cards"]) == cid and list(z["opps"]) == oid:
             return z["N"], z["PA"], z["PB"]
     log(f"[sensitivity] 구성 요소 행렬 {len(cards)} × {len(opps)} 계산…")
     N, PA, PB = compute_parts([Build(D, **c["spec"]) for c in cards], [b for _, b, _ in opps], workers)
-    np.savez_compressed(f, cards=np.array(cid, dtype=object), opps=np.array(oid, dtype=object), N=N, PA=PA, PB=PB)
+    _atomic_savez(f, cards=np.array(cid, dtype=str), opps=np.array(oid, dtype=str), N=N, PA=PA, PB=PB)
     return N, PA, PB
 
 
@@ -183,8 +209,8 @@ def card_matrix(D, cards, opps, workers=None, log=print):
     cid = [c["id"] for c in cards]
     oid = [e for e, _, _ in opps]
     if f.exists():
-        z = np.load(f, allow_pickle=True)
-        old_c, old_o, V = list(z["cards"]), list(z["opps"]), z["V"]
+        z = _load_npz(f)
+        old_c, old_o, V = (list(z["cards"]), list(z["opps"]), z["V"]) if z is not None else ([], None, None)
         if old_o == oid:
             have = {c: i for i, c in enumerate(old_c)}
             miss = [c for c in cards if c["id"] not in have]
@@ -194,10 +220,10 @@ def card_matrix(D, cards, opps, workers=None, log=print):
             rows = compute([Build(D, **c["spec"]) for c in miss], [b for _, b, _ in opps], workers)
             V = np.vstack([V, np.array(rows, dtype=np.float32)])
             old_c += [c["id"] for c in miss]
-            np.savez_compressed(f, cards=np.array(old_c, dtype=object), opps=np.array(oid, dtype=object), V=V)
+            _atomic_savez(f, cards=np.array(old_c, dtype=str), opps=np.array(oid, dtype=str), V=V)
             have = {c: i for i, c in enumerate(old_c)}
             return V[[have[c] for c in cid]]
     log(f"[matrix] {len(cards)} × {len(opps)} 상성 계산…")
     V = np.array(compute([Build(D, **c["spec"]) for c in cards], [b for _, b, _ in opps], workers), dtype=np.float32)
-    np.savez_compressed(f, cards=np.array(cid, dtype=object), opps=np.array(oid, dtype=object), V=V)
+    _atomic_savez(f, cards=np.array(cid, dtype=str), opps=np.array(oid, dtype=str), V=V)
     return V

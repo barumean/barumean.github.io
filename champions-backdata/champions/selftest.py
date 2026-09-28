@@ -107,8 +107,75 @@ kg = Side(mk("kangaskhan", ["double-edge"], None, "kangaskhanite", "adamant"))
 sash = Side(mk("meowscarada", ["flower-trick"], "protean", "focus-sash", "jolly"))
 act(kg, sash, M["double-edge"], F, None)
 check("부자유친: 두 번째 타격이 기합의띠를 뚫는다", sash.hp <= 0, f"{sash.hp:.1f}")
+fm = Side(mk("pyroar", ["flamethrower", "hyper-voice"], None, "pyroarite", "modest", (2, 0, 0, 32, 0, 32)))
+tgt = Side(mk("garchomp", ["earthquake"]))
+d_fire, d_norm = damage(fm, tgt, M["flamethrower"], F), damage(fm, tgt, M["hyper-voice"], F)
+fm.ability = "unnerve"
+check("불꽃의갈기: 불꽃 기술만 1.5배", fm.b.ability == "fire-mane"
+      and abs(d_fire / damage(fm, tgt, M["flamethrower"], F) - 1.5) < 1e-9
+      and abs(d_norm / damage(fm, tgt, M["hyper-voice"], F) - 1) < 1e-9)
 check("문포스 특공 하락은 설명문 10%", D.MOVES["moonblast"]["meta"].get("statChance") == 10)
 check("외형 변형(찌르호크 암컷)은 기본 종으로", D.mon("staraptor-female") == "staraptor")
+
+# ── 상대 스톤 조합(선출) ──
+from .pick import stone_sets
+sc = stone_sets([0.9, 0.5, 0, 0, 0, 0], [0.08, 0.16, 0.76])
+check("스톤 조합: 확률 합 1, 최대 2마리", abs(sum(p for p, _ in sc) - 1) < 1e-9 and max(len(S) for _, S in sc) <= 2)
+check("스톤 조합: 두 후보면 둘 다 든 경우가 가장 흔함", max(sc, key=lambda x: x[0])[1] == (0, 1), str(sc))
+sc = stone_sets([0.9, 0.5, 0.3, 0, 0, 0], [0.08, 0.16, 0.76], {1: True, 0: False, 2: False})
+check("메가 확정이면 그 한 마리만", sc == [(1.0, (1,))], str(sc))
+
+# ── 마무리 포켓몬 ──
+from .engine import is_closer
+kga = mk("kingambit", ["kowtow-cleave"], "supreme-overlord", None, "adamant")
+kgd = mk("kingambit", ["kowtow-cleave"], "defiant", None, "adamant")
+tgt = Side(mk("garchomp", ["earthquake"], "rough-skin"))
+check("총대장은 마무리(동료 2 쓰러짐 → ×1.2)", is_closer(kga) and not is_closer(kgd)
+      and abs(damage(Side(kga), tgt, M["kowtow-cleave"], F) / damage(Side(kgd), tgt, M["kowtow-cleave"], F) - 1.2) < 0.02)
+bm, bm0 = (Side(mk("basculegion-male", ["last-respects"], "adaptability", None, "adamant")) for _ in range(2))
+bm0.fainted = 0
+r_ = damage(bm, tgt, M["last-respects"], F) / damage(bm0, tgt, M["last-respects"], F)
+check("성묘 위력 = 50 × (1 + 쓰러진 동료 2) = 150", bm.fainted == 2 and abs(r_ - 3) < 0.1, f"{r_:.2f}")
+
+# ── 기술 고유 효과(09-27 코드 리뷰) ──
+from .engine import _usable, choose, _contact_reaction
+g_ = Side(mk("garchomp", ["earthquake"], "rough-skin"))
+kl = Side(mk("kangaskhan", ["last-resort", "sucker-punch", "ice-punch", "earthquake"], None, "kangaskhanite"))
+check("비장의무기는 다른 기술을 모두 쓴 뒤에만", not _usable(kl, M["last-resort"], 0, g_, F))
+ar_ = Side(mk("archaludon", ["steel-beam"], "sturdy", None, "modest", (2, 0, 0, 32, 0, 32)))
+act(ar_, g_, M["steel-beam"], F, None)
+check("철제광선은 최대 HP 1/2 자해", abs(ar_.hp - ar_.maxhp / 2) < 1e-6, f"{ar_.hp:.1f}/{ar_.maxhp}")
+mm_ = Side(mk("mimikyu", ["phantom-force"], "disguise"))
+g2 = Side(mk("garchomp", ["earthquake"], "rough-skin"))
+act(mm_, g2, M["phantom-force"], F, None)
+h_ = mm_.hp
+act(g2, mm_, M["earthquake"], F, ("move", M["phantom-force"]))
+check("고스트다이브 1턴째는 사라져서 공격이 안 닿고 피해도 없다", g2.hp == g2.maxhp and mm_.hp == h_ and mm_.disguise)
+dn_ = Side(mk("dragonite", ["outrage", "extreme-speed"], "multiscale"))
+act(dn_, Side(mk("garchomp", ["earthquake"])), M["outrage"], F, None)
+check("역린은 고정되고 끝나면 혼란", choose(dn_, g_, F, ("atk", None, 0))[1]["key"] == "outrage")
+tt_ = Side(mk("tinkaton", ["gigaton-hammer"], "mold-breaker"))
+act(tt_, g_, M["gigaton-hammer"], F, None)
+check("거대해머는 연속 사용 불가", not _usable(tt_, M["gigaton-hammer"], 1, g_, F))
+fm = Field(); fm.terrain = "misty"
+pk = Side(mk("pikachu", ["thunderbolt"], "static"))
+g3 = Side(mk("garchomp", ["dragon-claw"], "rough-skin"))
+for _ in range(4):
+    _contact_reaction(g3, pk, fm)
+check("미스트필드: 정전기 접촉 마비도 막힘(부가효과와 같은 판정)", g3.status is None)
+
+# ── 팀 탐색: 상대 스톤 2개면 메가는 하나 ──
+from .team import TeamSearch
+import numpy as np
+ids_ = ["a@mega", "b@mega", "c", "d", "e", "f", "a", "b"]
+Vt = np.zeros((6, 8), dtype=np.float32)
+Vt[:, 0] = Vt[:, 1] = -1.0                               # 메가형은 나에게 불리, 기본형(6, 7)은 0
+ts_ = TeamSearch([{"key": str(i)} for i in range(6)], Vt, ids_, [[0, 1, 2, 3, 4, 5]], np.ones(8))
+ts0 = TeamSearch([{"key": str(i)} for i in range(6)], Vt, ["a@mega", "b@mega", "c", "d", "e", "f", "x", "y"],
+                 [[0, 1, 2, 3, 4, 5]], np.ones(8))       # 기본형 개체가 없으면 규칙 없음(둘 다 메가)
+check("스톤 2개 팀: 두 마리를 같이 내도 메가는 하나", ts_.multi.all() and ts_.both.sum() == 4 and not ts0.multi.any()
+      and ts_.team_values(list(range(6)))[0] > ts0.team_values(list(range(6)))[0],
+      f"{ts_.team_values(list(range(6)))[0]:.3f} vs {ts0.team_values(list(range(6)))[0]:.3f}")
 
 # ── 역할 분류 ──
 from .meta import classify_build, modal_build
@@ -147,6 +214,12 @@ R = np.array([[0.3 * Ms[0][i, c[0]] + 0.7 * Ms[1][i, c[1]] for c in cols] for i 
 check("베이지안 게임 이중 오라클 = 곱 게임", abs(solve_bayes(Ms, [0.3, 0.7])[0] - solve(R)[0]) < 1e-7)
 A_, B_ = bs[0], bs[1]
 check("같은 세트 두 유형의 베이지안 값 = 원래 값", abs(duel_bayes(A_, [B_, B_], [0.5, 0.5]) - duel(A_, B_)) < 1e-9)
+dit = mk("ditto", ["transform"], "imposter", "choice-scarf", "bold", (32, 0, 17, 0, 17, 0))
+t1 = mk("dragonite", ["extreme-speed", "dragon-dance", "earthquake", "fire-punch"], "multiscale")
+t2 = mk("dragonite", ["extreme-speed", "earthquake", "fire-punch", "iron-head"], "multiscale")
+vb = duel_bayes(dit, [t1, t2], [0.5, 0.5])
+check("괴짜는 상대 유형을 알고 대응(유형마다 계획 수가 달라도 계산)",
+      abs(vb - 0.5 * (duel(dit, t1) + duel(dit, t2))) < 1e-9, f"{vb:.3f}")
 
 # ── 출력 ──
 bad = [r for r in results if not r[1]]
