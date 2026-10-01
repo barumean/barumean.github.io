@@ -4,7 +4,7 @@
   prep     풀 세트 최적화 + 상성 행렬 (캐시)   --pool N (기본: 전 종)
   team     최적 파티 6마리 + 아이템·기술       --pool N --must 한카리아스,누리레느 --exclude 메타몽
   moves    내 파티 기술 배치(+도구·성격)       --party party.txt | --names 한카리아스,누리레느,...
-  pick     상대 6마리 보고 선출 3 + 선봉       --party party.txt --opp 보만다,한카리아스,...
+  pick     상대 6마리 보고 선출 3 + 선봉       --party party.txt --opp 보만다,한카리아스,...  (--fast: 옛 빠른 방식)
   switch   배틀 중 상대 필드 포켓몬에 낼 교체   --party party.txt --hp 100,80,0,... --opp 보만다 --opp-hp 70
   ui       실전 선출 보드(HTML) 생성 — 상대 6마리를 탭하면 ①선봉 ②③ 순서   --party my.txt
   check    모델 점검(실전 승패 신호와 상관, 군집 부트스트랩 구간, 타입 기준선, 보류 묶음)
@@ -354,6 +354,8 @@ def cmd_pick(a):
     for x in (a.opp_mega.split(",") if a.opp_mega else []):
         k = D.mon(x)
         mk[D.base_of(k)] = D.DEX[k]["item"] if D.DEX[k]["base_key"] else (stones_of(D, k) or [None])[0]
+    if not (a.fast or a.mc):
+        return _pick_seq(D, mine, opp_keys, mk or None, a)
     r = advise(D, mine, opp_keys, mk or None, a.mc)
     V = r["V"]
     L = [f"# 선출 추천\n", "내 파티:"]
@@ -380,6 +382,59 @@ def cmd_pick(a):
     if risky:
         L.append("\n⚠ 고른 3마리로 답이 없는 상대: " + ", ".join(D.name(k) for k in risky))
     L.append("\n값 +1 = 만피로 이김, 0 = 비등, −1 = 못 건드리고 짐 (1:1 끝장 시뮬레이션 + 실전 승패 신호)")
+    text = "\n".join(L)
+    print(text)
+    _log(f"저장: {_out('pick', text)}")
+
+
+def _ro(name):
+    """'아머까오로' / '메가망나뇽으로' — 받침(ㄹ 제외)이 있으면 '으로'. 괄호로 끝나면 괄호 앞 글자로 본다."""
+    base = name.split(" (")[0]
+    c = ord(base[-1]) - 0xAC00 if base else -1
+    jong = c % 28 if 0 <= c < 11172 else 0
+    return name + ("으로" if jong and jong != 8 else "로")
+
+
+def _pick_seq(D, mine, opp_keys, mk, a):
+    """선출 + 선봉을 한 게임(60 전략)으로 — 선봉 턴 교체(공짜 한 방)와 3:3 순차 진행까지 계산(champions/lead.py)."""
+    import random
+    from .lead import advise as lead_advise
+    from .textio import fmt_build, table
+    r = lead_advise(D, mine, opp_keys, mk, log=_log)
+    nm = lambda t, side: "/".join(D.name(mine[i].form) if side == 0 else D.name(opp_keys[i]) for i in t)
+    me = lambda i: D.name(mine[i].form)
+    L = ["# 선출·선봉 추천 (선출 + 선봉 60전략 게임)\n", "내 파티:"]
+    L += [f"  {i + 1}. {fmt_build(D, b)}" for i, b in enumerate(mine)]
+    L.append("\n상대: " + ", ".join(D.name(k) for k in opp_keys) + "\n")
+    mix = r["mix"]
+    pick = random.Random().choices(mix, weights=[p for _, _, p, _ in mix])[0]
+    t, i, p, w = pick
+    L.append(f"## 이번 판: **{nm(t, 0)}**, 선봉 **{me(t[i])}**")
+    L.append(f"균형 혼합에서 비율대로 뽑은 수입니다(이 수의 비율 {p * 100:.0f}%). 판마다 다시 뽑으세요 — 한 수를 고정하면 읽힙니다.\n")
+    st, si = r["safe"]
+    L.append(f"한 수만 고집한다면: {nm(st, 0)}, 선봉 {me(st[si])} — 상대가 이 수를 알고 최선으로 대응해도 {r['safe_value']:+.2f}"
+             f" (섞어 내면 {r['value']:+.2f})\n")
+    L.append("### 섞는 비율\n")
+    L.append(table([[nm(t, 0), me(t[i]), f"{p * 100:.0f}%", "-" if w is None else f"{w:+.2f}"] for t, i, p, w in mix],
+                   ["조합", "선봉", "비율", "이 수만 고집할 때 보장값"]))
+    L.append("\n### 선봉 턴 대응 — 이번 판의 수로 냈을 때\n")
+    L.append("상대 선봉을 보고 그대로 둘지, 뒤의 누구로 바꿀지(바꾸면 들어오는 쪽이 상대 선봉의 한 방을 맞습니다). 비율은 선봉 턴의 3×3 게임 균형입니다.\n")
+    resp = r["responses"].get((t, i)) or r["response"]
+    rows = []
+    for q, (stay, sw, v, wq) in resp.items():
+        act = [f"그대로 {stay * 100:.0f}%"] if stay > 0.01 else []
+        act += [f"{_ro(me(k))} 교체 {pp * 100:.0f}%" for k, pp in sorted(sw.items(), key=lambda x: -x[1])]
+        rows.append([D.name(opp_keys[q]), f"{wq * 100:.0f}%", " · ".join(act), f"{v:+.2f}"])
+    L.append(table(rows, ["상대 선봉", "예상", "대응", "값"]))
+    L.append("\n상대 예상(균형): " + " · ".join(f"{nm(t, 1)}(선봉 {D.name(opp_keys[t[j]])}) {pp * 100:.0f}%"
+                                         for t, j, pp in r["their_mix"][:6]) + "\n")
+    V = r["V0"]
+    hdr = ["상대 ↓ / 나 →"] + [me(i) for i in range(len(mine))] + ["최선의 답"]
+    L.append(table([[D.name(k)] + [f"{V[i, j]:+.2f}" for i in range(len(mine))] + [me(int(V[:, j].argmax()))]
+                    for j, k in enumerate(opp_keys)], hdr))
+    L.append(f"\n값 +1 = 3마리를 만피로 남기고 이김, −1 = 반대. 3:3 순차 시뮬(HP·상태 이월, 기절 교대) + 선봉 턴 교체. "
+             f"상대 메가는 스톤 조합 {r['n_scenarios']}가지를 상대만 아는 게임. 1:1 표는 만피 대면 값(실전 신호 미반영).")
+    L.append(f"계산 {r['seconds']:.0f}초 · 조합 쌍 블록 {r['n_blocks']} · 1:1 시뮬 {r['n_sim']:,}회. 빠른 옛 방식: --fast")
     text = "\n".join(L)
     print(text)
     _log(f"저장: {_out('pick', text)}")
@@ -586,7 +641,8 @@ def main():
     s.add_argument("--names")
     s.add_argument("--opp", required=True)
     s.add_argument("--opp-mega", default=None, help="메가인 걸 아는 상대(쉼표)")
-    s.add_argument("--mc", type=int, default=0, help="확률 모드 판수(명중·난수·급소·마비). 0 = 기대값, 느려짐")
+    s.add_argument("--mc", type=int, default=0, help="(--fast 전용) 확률 모드 판수. 0 = 기대값")
+    s.add_argument("--fast", action="store_true", help="옛 방식: 3마리 20×20 게임 + 선봉 3×3 게임(1:1 값 합산, 1초 안팎)")
     s = sub.add_parser("switch")
     s.add_argument("--party")
     s.add_argument("--names")
