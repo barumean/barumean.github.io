@@ -46,8 +46,11 @@ button{font:inherit;color:inherit}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:14px}
 header .src{font-size:12px}
 .mine{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
-.mine .m{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;display:flex;align-items:center;gap:6px}
+.mine .m{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;display:flex;align-items:center;gap:6px;min-width:0}
 .mine .m small{color:var(--muted);font-size:11px}
+.mine .m .mi{display:flex;flex-direction:column;min-width:0}
+.mvs{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.mine .m .mvs{font-size:11.5px}
 .warn{border:1px solid var(--bad);background:rgba(var(--heat-bad),.10);color:var(--ink);border-radius:10px;padding:9px 12px;margin:0 0 12px;font-size:13px;line-height:1.45}
 .warn b{color:var(--bad)}
 
@@ -92,6 +95,7 @@ header .src{font-size:12px}
 .card .sub{font-size:12px;color:var(--muted)}
 .card.lead{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .card.lead .pos,.card.lead .sub{color:var(--accent-ink);opacity:.85}
+.card .mvs{margin-top:2px}
 .card.lead .who{font-size:30px}
 .stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;margin-bottom:14px}
 .stats b{font-family:var(--mono);font-weight:500}
@@ -417,7 +421,8 @@ function analyze(){
 
 // ── 그리기 ──
 function renderMine(){
-  $("#mine").innerHTML = ME.map(b => `<span class="m${b.c ? ' closer' : ''}" title="${esc(b.item + ' | ' + b.nat + ' | ' + b.sp + ' | ' + b.mv.join(', '))}">${dots(b.t)} ${esc(b.n)} <small>${esc(b.a)} · ${esc(b.item)}</small></span>`).join("");
+  $("#mine").innerHTML = ME.map(b => `<span class="m${b.c ? ' closer' : ''}" title="${esc(b.item + ' | ' + b.nat + ' | ' + b.sp + ' | ' + b.mv.join(', '))}">${dots(b.t)}
+    <span class="mi"><span>${esc(b.n)} <small>${esc(b.a)} · ${esc(b.item)}</small></span><span class="mvs">${esc(b.mv.join(' · '))}</span></span></span>`).join("");
   $("#src").textContent = `시즌 ${DATA.meta.season} · op.gg 수집 ${DATA.meta.date} · 1:1 시뮬 + 실전 승패 · 3/6 선출 게임 균형`
     + (SERVER ? ` · 정밀 계산: 이 PC(${SERVER.date})` : "");
   // 실험적 경고(PROJECT_REVIEW 2): 모델이 과대평가할 수 있다고 알려진 요소가 있는 세트(b.w = 경고 문장들)가
@@ -487,7 +492,8 @@ function renderResult(){
   const cards = r.pos.map((i, k) => {
     const good = [...Array(slots.length).keys()].filter(j => V[i][j] >= 0.3).map(oname);
     return `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span>
-      <span class="sub">${esc(ME[i].item)}${lpct(i)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span></div>`;
+      <span class="sub">${esc(ME[i].item)}${lpct(i)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span>
+      <span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`;
   }).join("");
   const mix = r.mix.length > 1 ? `<div class="block"><h2>섞어 낼 때 비율 (균형 — 읽히지 않게)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))} <span class="muted">· 선봉 ${esc(name(x.lead))}</span><div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
     <p class="legend">한 조합만 고집하면 읽힙니다. 위 카드는 '한 조합만 낸다면'(보장값 최고)이라 이 표의 1순위와 다를 수 있습니다.</p></div>` : "";
@@ -545,7 +551,7 @@ function preciseBlock(oname){
 function precisePanel(c, oname){
   const r = c.res, pk = c.pick, name = i => ME[i].n;
   const labels = ["① 선봉", "② 대기", "③ 대기"];
-  const cards = [pk.lead, ...pk.t.filter(i => i !== pk.lead)].map((i, k) => `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span><span class="sub">${esc(ME[i].item)}</span></div>`).join("");
+  const cards = [pk.lead, ...pk.t.filter(i => i !== pk.lead)].map((i, k) => `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span><span class="sub">${esc(ME[i].item)}</span><span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`).join("");
   const same = r.safe.lead === pk.lead && r.safe.t.join() === pk.t.join();
   const stats = `<div class="stats"><span>이번 판의 수 = 균형 비율 <b>${Math.round(pk.p * 100)}%</b>에서 뽑음</span><span>섞어 낼 때 게임 값 <b>${fmt(r.value)}</b></span>
     <span>한 수만 고집한다면: ${esc(r.safe.t.map(name).join(' / '))} · 선봉 ${esc(name(r.safe.lead))} — 보장값 <b>${fmt(r.safe.v)}</b>${same ? ' (이번 판과 같음)' : ''}</span></div>`;
