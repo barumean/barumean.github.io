@@ -208,8 +208,10 @@ const SERVER = null;
 const OPPS = DATA.opps, TYPES = DATA.types;
 // 내 후보(추천 파티 + 풀의 종별 최적 세트). 상성은 ×1000 정수로 실려 온다.
 const ROSTER = DATA.roster.map((b, ri) => ({...b, ri, id: b.k + "~" + b.item}));
-// 특성·실능 한 줄(내 파티 칸·선출 카드): "특성 탈 · H161 A156 B103 C63 D125 S116"
-const statLine = b => (b.ab ? "특성 " + b.ab : "") + (b.st ? (b.ab ? " · " : "") + "HABCDS".split("").map((c, i) => c + b.st[i]).join(" ") : "");
+// 내 파티 칸·선출 카드의 두 줄(10-21 사용자 요청): "특성 탈 · 고집 · 노력치 H31 A32 B3" / "실능 H161 A156 B103 C63 D125 S116"
+const statLine = b => [b.ab ? "특성 " + b.ab : "", b.nat || "", b.sp ? "노력치 " + b.sp : ""].filter(Boolean).join(" · ");
+const realLine = b => b.st ? "실능 " + "HABCDS".split("").map((c, i) => c + b.st[i]).join(" ") : "";
+const statSpans = b => `<span class="stl">${esc(statLine(b))}</span><span class="stl">${esc(realLine(b))}</span>`;
 OPPS.forEach(o => { o.v = o.v.map(x => x / 1000); if (o.mv) o.mv = o.mv.map(x => x / 1000); });
 const DEFAULT_ME = DATA.me.slice();
 let ME = DEFAULT_ME.map(i => ROSTER[i]);
@@ -425,8 +427,8 @@ function analyze(){
 
 // ── 그리기 ──
 function renderMine(){
-  $("#mine").innerHTML = ME.map(b => `<span class="m${b.c ? ' closer' : ''}" title="${esc(b.item + ' | ' + b.nat + ' | ' + b.sp + ' | ' + statLine(b) + ' | ' + b.mv.join(', '))}">${dots(b.t)}
-    <span class="mi"><span>${esc(b.n)} <small>${esc(b.a)} · ${esc(b.item)}</small></span><span class="stl">${esc(statLine(b))}</span><span class="mvs">${esc(b.mv.join(' · '))}</span></span></span>`).join("");
+  $("#mine").innerHTML = ME.map(b => `<span class="m${b.c ? ' closer' : ''}" title="${esc(b.item + ' | ' + statLine(b) + ' | ' + realLine(b) + ' | ' + b.mv.join(', '))}">${dots(b.t)}
+    <span class="mi"><span>${esc(b.n)} <small>${esc(b.a)} · ${esc(b.item)}</small></span>${statSpans(b)}<span class="mvs">${esc(b.mv.join(' · '))}</span></span></span>`).join("");
   $("#src").textContent = `시즌 ${DATA.meta.season} · op.gg 수집 ${DATA.meta.date} · 1:1 시뮬 + 실전 승패 · 3/6 선출 게임 균형`
     + (SERVER ? ` · 정밀 계산: 이 PC(${SERVER.date})` : "");
   // 실험적 경고(PROJECT_REVIEW 2): 모델이 과대평가할 수 있다고 알려진 요소가 있는 세트(b.w = 경고 문장들)가
@@ -497,7 +499,7 @@ function renderResult(){
     const good = [...Array(slots.length).keys()].filter(j => V[i][j] >= 0.3).map(oname);
     return `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span>
       <span class="sub">${esc(ME[i].item)}${lpct(i)}${good.length ? ' · 유리: ' + esc(good.slice(0,3).join(', ')) : ''}</span>
-      <span class="stl">${esc(statLine(ME[i]))}</span><span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`;
+      ${statSpans(ME[i])}<span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`;
   }).join("");
   const mix = r.mix.length > 1 ? `<div class="block"><h2>섞어 낼 때 비율 (균형 — 읽히지 않게)</h2><div class="mix">${r.mix.map(x => `<div class="row"><div>${esc(x.t.map(name).join(' / '))} <span class="muted">· 선봉 ${esc(name(x.lead))}</span><div class="bar"><i style="width:${(x.p*100).toFixed(0)}%"></i></div></div><span class="num">${(x.p*100).toFixed(0)}%</span></div>`).join("")}</div>
     <p class="legend">한 조합만 고집하면 읽힙니다. 위 카드는 '한 조합만 낸다면'(보장값 최고)이라 이 표의 1순위와 다를 수 있습니다.</p></div>` : "";
@@ -555,7 +557,7 @@ function preciseBlock(oname){
 function precisePanel(c, oname){
   const r = c.res, pk = c.pick, name = i => ME[i].n;
   const labels = ["① 선봉", "② 대기", "③ 대기"];
-  const cards = [pk.lead, ...pk.t.filter(i => i !== pk.lead)].map((i, k) => `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span><span class="sub">${esc(ME[i].item)}</span><span class="stl">${esc(statLine(ME[i]))}</span><span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`).join("");
+  const cards = [pk.lead, ...pk.t.filter(i => i !== pk.lead)].map((i, k) => `<div class="card ${k===0?'lead':''}"><span class="pos">${labels[k]}</span><span class="who">${esc(name(i))}</span><span class="sub">${esc(ME[i].item)}</span>${statSpans(ME[i])}<span class="mvs">${esc(ME[i].mv.join(' · '))}</span></div>`).join("");
   const same = r.safe.lead === pk.lead && r.safe.t.join() === pk.t.join();
   const stats = `<div class="stats"><span>이번 판의 수 = 균형 비율 <b>${Math.round(pk.p * 100)}%</b>에서 뽑음</span><span>섞어 낼 때 게임 값 <b>${fmt(r.value)}</b></span>
     <span>한 수만 고집한다면: ${esc(r.safe.t.map(name).join(' / '))} · 선봉 ${esc(name(r.safe.lead))} — 보장값 <b>${fmt(r.safe.v)}</b>${same ? ' (이번 판과 같음)' : ''}</span></div>`;
@@ -785,7 +787,7 @@ function renderMePool(){
     return (b.n + b.k + b.item + (b.m ? "메가" : "")).replace(/\s/g, "").includes(q);
   });
   $("#meState").textContent = `· ${ME.length}/6${meIsDefault() ? " · 추천 파티" : " · 직접 고름"}`;
-  $("#mpool").innerHTML = list.map(b => `<button class="pk" type="button" role="listitem" data-ri="${b.ri}" aria-pressed="${on.has(b.ri)}" title="${esc(b.a + ' | ' + b.item + ' | ' + b.nat + ' | ' + b.sp + ' | ' + statLine(b) + ' | ' + b.mv.join(', '))}">
+  $("#mpool").innerHTML = list.map(b => `<button class="pk" type="button" role="listitem" data-ri="${b.ri}" aria-pressed="${on.has(b.ri)}" title="${esc(b.a + ' | ' + b.item + ' | ' + statLine(b) + ' | ' + realLine(b) + ' | ' + b.mv.join(', '))}">
     ${dots(b.t)}<span class="pn"><span>${esc(b.n)}</span><span class="w">${esc(b.item)}${b.r ? ' · ' + b.r + '위' : ''}${b.c ? ' · 마무리' : ''}</span></span></button>`).join("")
     || `<p class="muted">조건에 맞는 포켓몬이 없습니다.</p>`;
 }
