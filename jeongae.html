@@ -215,18 +215,24 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
 .precise p{font-size:12px;line-height:1.7;color:var(--muted)}
 .precise .error{color:var(--bad)}
 .elapsed{margin-top:3px;font-size:12px;color:var(--muted)}
-.heat-inspector{margin-bottom:12px}
-.heat-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:12px;color:var(--muted)}
-.heat-label select{flex:1;min-width:0;min-height:44px;padding:8px 10px;border:1px solid var(--control-line);border-radius:9px;background:var(--panel);font-size:16px;color:var(--ink)}
-.heat-rows{display:grid;gap:5px}
-.heat-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:rgba(var(--cell-rgb),var(--cell-a))}
-.heat-row.pick{border:2px solid var(--accent);padding:7px 9px}
-.heat-row small{color:var(--muted);font-size:11.5px;margin-left:5px}
-.heat{width:100%;min-width:490px;border-collapse:separate;border-spacing:3px;font-size:12px}
-.heat th{padding:5px 3px;color:var(--muted);font-size:11.5px;font-weight:600;text-align:center;overflow-wrap:anywhere}
-.heat .row-heading{text-align:left;min-width:88px;max-width:110px}
-.heat td{min-width:48px;text-align:center;padding:10px 4px;border-radius:6px;background:rgba(var(--cell-rgb),var(--cell-a));color:var(--ink);font-family:var(--mono);font-variant-numeric:tabular-nums}
-.heat td.pick{outline:2px solid var(--accent);outline-offset:-2px}
+.heat-wrap{overflow-x:auto;max-width:100%}
+.heat{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;line-height:1.25}
+.heat .c-me{width:76px}
+.heat th,.heat td{border:1px solid var(--line)}
+.heat thead th{padding:6px 2px;font-size:11px;font-weight:650;color:var(--ink);text-align:center;vertical-align:bottom;background:var(--panel-soft);word-break:break-all}
+.heat thead .corner{padding:6px 5px;text-align:left;font-size:10.5px;font-weight:500;color:var(--muted);word-break:keep-all}
+.heat .grp th{padding:5px 7px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);background:var(--panel-soft)}
+.heat tbody th[scope=row]{padding:6px 4px 6px 7px;text-align:left;font-size:12px;font-weight:650;background:var(--panel);overflow-wrap:anywhere}
+.heat tbody th[scope=row] small{display:block;margin-top:2px;font-size:10.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+.heat .pick th[scope=row]{box-shadow:inset 3px 0 0 var(--accent)}
+.heat td{height:40px;padding:0 1px;text-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.04em;color:var(--ink);background:rgba(var(--cell-rgb),var(--cell-a))}
+.heat td.best{font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.heat tfoot th,.heat tfoot td{height:auto;padding:6px 2px;font-size:11px;background:var(--panel-soft)}
+.heat tfoot th{padding-left:7px;text-align:left;font-weight:600;color:var(--muted)}
+.heat tfoot td{font-weight:700;letter-spacing:0}
+.heat tfoot td.few{color:var(--bad)}
+.heat-scale{display:flex;align-items:center;gap:7px;margin-top:10px;font:11px var(--mono);color:var(--muted)}
+.heat-scale i{flex:1;max-width:240px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(var(--heat-bad),.4),rgba(var(--heat-bad),.05) 50%,rgba(var(--heat-good),.05) 50%,rgba(var(--heat-good),.4))}
 .legend{font-size:12px;color:var(--muted);line-height:1.7;margin-top:10px}
 .empty-state{padding:22px 4px 28px}
 .empty-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-size:20px;margin-bottom:14px}
@@ -266,7 +272,7 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
 .jump-backup{display:block;font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jump-cta{font-size:12px;font-weight:650;white-space:nowrap}
 .toast{position:fixed;z-index:40;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:11px 16px;border-radius:12px;background:var(--ink);color:var(--panel);font-size:13px;box-shadow:var(--shadow);pointer-events:none}
-@media(min-width:700px){.heat-inspector{display:none}.card-main{padding:13px 12px 7px}.who{font-size:21px}}
+@media(min-width:700px){.card-main{padding:13px 12px 7px}.who{font-size:21px}.heat{font-size:13px}.heat .c-me{width:136px}.heat thead th{padding:7px 4px;font-size:12px}.heat tbody th[scope=row]{font-size:13px}.heat td{height:44px}}
 @media(min-width:960px){
   .wrap{padding:28px 24px 44px}
   .layout{grid-template-columns:minmax(340px,.86fr) minmax(0,1.14fr);grid-template-areas:'opponent results' 'editor results';grid-template-rows:auto 1fr;gap:18px;align-items:start}
@@ -288,6 +294,10 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
   .card-main{padding-inline:7px}
   .response-card{padding-inline:8px}
   .section-title{gap:5px}
+  .heat{font-size:11px}
+  .heat .c-me{width:64px}
+  .heat thead th{font-size:10.5px}
+  .heat tbody th[scope=row]{padding:6px 2px 6px 5px;font-size:11px}
 }
 @media(hover:hover){.btn:not(:disabled):hover,.slot-remove:hover{background:var(--chip)}.btn.primary:not(:disabled):hover{filter:brightness(1.06)}.pk:hover{border-color:var(--control-line)}.party-edit:hover{background:var(--panel-soft)}}
 @media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.btn,.pk,.slot{transition:background-color .12s,border-color .12s}summary::after{transition:transform .12s}}
@@ -626,7 +636,7 @@ let typeSel = [], filteredOpps = [];
 let poolButtons = new Map(), poolSelected = new Set(), meButtons = new Map(), meSelected = new Set();
 let mePoolBuilt = false, oppSearchTimer = 0, meSearchTimer = 0;
 let LASTPOS = [], analysisCache = null, resultTimer = 0, resultPending = false, resultReady = false;
-let resVisible = false, resultObserver = null, heatKey = '', toastTimer = 0;
+let resVisible = false, resultObserver = null, toastTimer = 0;
 const foldState = Object.create(null);
 const PCACHE = Object.create(null);
 let BUSY = null;
@@ -781,20 +791,29 @@ function theirFold(r, exact = false, prefix = ''){
   const body = r.their.slice(0, exact ? 4 : 3).map(x => `<div class='expected-row'><div>${esc(x.t.map(opponentName).join(' / '))}${exact ? `<small>선봉 ${esc(opponentName(x.lead))}</small>` : ''}<div class='bar'><i style='width:${Math.max(0, Math.min(100, x.p * 100)).toFixed(1)}%'></i></div></div><span class='num'>${Math.round(x.p * 100)}%</span></div>`).join('') + `<p class='hint'>게임 균형에서의 예상입니다. 실제 상대의 선출을 확정하는 정보는 아닙니다.</p>`;
   return fold(prefix + 'their', '상대 예상 선출', exact ? '선출·선봉' : '상위 3조합', body);
 }
-const heatStyle = v => `--cell-rgb:var(${v >= 0 ? '--heat-good' : '--heat-bad'});--cell-a:${(.05 + Math.min(1, Math.abs(v)) * .18).toFixed(3)}`;
-function heatRows(r, j){
-  return ME.map((b, i) => `<div class='heat-row${r.pos.includes(i) ? ' pick' : ''}' style='${heatStyle(r.V[i][j])}'><span>${esc(b.n)}${r.pos.includes(i) ? '<small>추천</small>' : ''}</span><b class='num'>${fmt(r.V[i][j])}</b></div>`).join('');
-}
+const heatStyle = v => `--cell-rgb:var(${v >= 0 ? '--heat-good' : '--heat-bad'});--cell-a:${(.05 + Math.min(1, Math.abs(v)) * .35).toFixed(3)}`;
+// 상성표 칸의 짧은 표기(+.87 · −.05 · +1.0) — 휴대폰 폭에 6칸이 들어가게. 정확한 값은 칸의 title(fmt)
+const fmtc = v => { const a = Math.min(1, Math.abs(v)), s = v >= 0 ? '+' : '−'; return a >= .995 ? s + '1.0' : s + '.' + String(Math.round(a * 100)).padStart(2, '0'); };
+const HEAT_ANSWER = .5;                                // 답 = 1:1 값 이 이상(팀 탐색의 실전 위협 규칙과 같은 문턱)
 function heatFold(r){
-  if (!slots.some(s => s.k === heatKey)) heatKey = slots[0].k;
-  const j = slots.findIndex(s => s.k === heatKey);
-  const table = `<div class='table-scroll' tabindex='0' role='region' aria-label='전체 상성 히트맵, 가로로 스크롤 가능'><table class='heat'><caption class='sr-only'>내 파티에서 상대 파티로의 1:1 기대 상성</caption><thead><tr><th scope='col'>나 → 상대</th>${slots.map((s, q) => `<th scope='col' title='${esc(BY[s.k].set)}'>${esc(opponentName(q))}</th>`).join('')}</tr></thead><tbody>${ME.map((b, i) => `<tr><th scope='row' class='row-heading'>${esc(b.n)}</th>${slots.map((_, q) => `<td class='${r.pos.includes(i) ? 'pick' : ''}' style='${heatStyle(r.V[i][q])}'>${fmt(r.V[i][q])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-  const body = `<div class='heat-inspector'><label class='heat-label' for='heatTarget'><span>상대 선택</span><select id='heatTarget'>${slots.map((s, q) => `<option value='${esc(s.k)}'${s.k === heatKey ? ' selected' : ''}>${esc(opponentName(q))}</option>`).join('')}</select></label><div class='heat-rows' id='heatRows'>${heatRows(r, j)}</div></div>${fold('heat-matrix', '전체 상성표', '나 → 상대', table, '', window.matchMedia('(min-width:700px)').matches)}<p class='legend'>+1 만피로 승리 · 0 비등 · −1 피해 없이 패배<br>굵은 테두리 = 빠른 계산 추천 3마리. 수치는 1:1 기대 상성이며, 색뿐 아니라 부호와 숫자로도 표시합니다. 상대 세트는 입력 도움말에서 확인할 수 있습니다.</p>`;
-  return fold('heat', '상성 히트맵', '전체 파티 비교', body);
+  const n = slots.length, best = slots.map((_, q) => Math.max(...ME.map((_, i) => r.V[i][q])));
+  const row = i => {
+    const avg = slots.reduce((t, _, q) => t + r.V[i][q], 0) / n;
+    return `<tr${r.pos.includes(i) ? " class='pick'" : ''}><th scope='row'>${esc(ME[i].n)}<small>평균 ${fmtc(avg)}</small></th>${slots.map((_, q) => { const v = r.V[i][q];
+      return `<td class='${v === best[q] ? 'best' : ''}' style='${heatStyle(v)}' title='${esc(ME[i].n)} → ${esc(opponentName(q))} ${fmt(v)}'>${fmtc(v)}</td>`; }).join('')}</tr>`;
+  };
+  const group = (label, idx) => idx.length ? `<tbody><tr class='grp'><th scope='rowgroup' colspan='${n + 1}'>${label}</th></tr>${idx.map(row).join('')}</tbody>` : '';
+  const answers = slots.map((_, q) => ME.filter((_, i) => r.V[i][q] >= HEAT_ANSWER).length);
+  const table = `<div class='heat-wrap' tabindex='0' role='region' aria-label='상성표'><table class='heat'><caption class='sr-only'>내 파티(행)에서 상대 파티(열)로의 1:1 기대 상성</caption><colgroup><col class='c-me'><col span='${n}'></colgroup>`
+    + `<thead><tr><th scope='col' class='corner'>나 ＼ 상대</th>${slots.map((s, q) => `<th scope='col' title='${esc(BY[s.k].set)}'>${esc(opponentName(q))}</th>`).join('')}</tr></thead>`
+    + group('빠른 계산 추천 3마리', r.pos.slice().sort((a, b) => a - b)) + group('나머지', ME.map((_, i) => i).filter(i => !r.pos.includes(i)))
+    + `<tfoot><tr><th scope='row'>답 수</th>${answers.map(k => `<td class='${k <= 1 ? 'few' : ''}'>${k}</td>`).join('')}</tr></tfoot></table></div>`;
+  const body = table + `<div class='heat-scale' aria-hidden='true'><span>−1.0</span><i></i><span>+1.0</span></div><p class='legend'>칸 = 1:1 기대 상성 — +1.0 만피로 승리 · 0 비등 · −1.0 피해 없이 패배(초록 유리 · 빨강 불리, 진할수록 큼).<br>굵은 밑줄 = 그 상대에게 가장 좋은 내 포켓몬 · 답 수 = +.50 이상인 내 포켓몬 수(1 이하는 빨강) · 평균 = 상대 ${n}마리에 대한 평균. 상대 세트는 입력 도움말에서 확인할 수 있습니다.</p>`;
+  return fold('heat', '상성표', '나 → 상대 1:1', body);
 }
 function calculationHelp(r, c){
   let body = `<p>빠른 계산은 1:1 상성을 모아 3:3 선출 게임을 풉니다. 추천은 한 조합을 고집할 때 보장값이 가장 높은 3마리이고, 선봉은 그 조합의 선봉 게임에서 비율이 가장 높은 포켓몬입니다. 총대장·성묘 등 마무리 후보는 가능한 한 선봉에서 뺍니다.</p><p>보장값과 게임 값은 순위·차이를 비교하는 점수이며 승률이 아닙니다. 상대 스톤 조합 ${r.nsc}가지를 ${r.nsc > 1 ? '상대만 아는 정보로 두고 계산합니다' : '반영합니다'}. 내 스톤 소지자가 둘 이상이면 배틀에서 한 마리만 메가진화합니다.</p>`;
-  if (c){ const x = c.res; body += `<p>정밀 계산 ${Math.round(x.sec)}초${x.cached ? ' · 저장된 결과' : ''} · 조합 쌍 블록 ${x.blocks} · 1:1 시뮬 ${Number(x.sims).toLocaleString()}회${x.nsc > 1 ? ` · 상대 스톤 조합 ${x.nsc}가지` : ''}.</p><p>3:3 순차 시뮬 + 선봉 턴 교체${x.pol ? ' + 전개 운영(양쪽 요원이 장판·벽 먼저, 하품·끌어내기 교체, 도발·앙코르 견제)' : ''}. 이 PC의 현재 엔진 코드로 계산하며 실전 신호는 반영하지 않습니다. 카드의 선봉 %는 전체 정밀 혼합 전략에서의 선봉 비율입니다. 유리한 상대와 히트맵은 빠른 1:1 참고 값입니다.</p>`; }
+  if (c){ const x = c.res; body += `<p>정밀 계산 ${Math.round(x.sec)}초${x.cached ? ' · 저장된 결과' : ''} · 조합 쌍 블록 ${x.blocks} · 1:1 시뮬 ${Number(x.sims).toLocaleString()}회${x.nsc > 1 ? ` · 상대 스톤 조합 ${x.nsc}가지` : ''}.</p><p>3:3 순차 시뮬 + 선봉 턴 교체${x.pol ? ' + 전개 운영(양쪽 요원이 장판·벽 먼저, 하품·끌어내기 교체, 도발·앙코르 견제)' : ''}. 이 PC의 현재 엔진 코드로 계산하며 실전 신호는 반영하지 않습니다. 카드의 선봉 %는 전체 정밀 혼합 전략에서의 선봉 비율입니다. 유리한 상대와 상성표는 빠른 1:1 참고 값입니다.</p>`; }
   return fold('method', '계산 기준·점수 안내', '참고용', body);
 }
 function getAnalysis(){
@@ -907,12 +926,6 @@ $('#result').addEventListener('click', e => {
     const c = PCACHE[preciseSig()];
     if (c && c.res){ c.pick = drawPick(c.res); renderResult(); updateJump(); $('#result [data-pc=again]')?.focus({preventScroll:true}); announce('이번 판의 수를 다시 뽑았습니다'); }
   }
-});
-$('#result').addEventListener('change', e => {
-  if (e.target.id !== 'heatTarget' || resultPending) return;
-  heatKey = e.target.value;
-  const j = slots.findIndex(s => s.k === heatKey);
-  if (j >= 0 && analysisCache && analysisCache.sig === preciseSig()) $('#heatRows').innerHTML = heatRows(analysisCache.r, j);
 });
 
 // ── 공유·저장: #v=key,key*,key!&me=ids ──
