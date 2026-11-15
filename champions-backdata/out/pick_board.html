@@ -56,7 +56,7 @@ h3{font-size:14px;font-weight:700}
 .sr-only{position:absolute;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .skip{position:fixed;z-index:50;left:16px;top:-100px;min-height:44px;padding:10px 16px;border-radius:10px;background:var(--accent);color:var(--accent-ink)}
 .skip:focus{top:12px}
-.wrap{max-width:1240px;margin:auto;padding:20px 16px calc(106px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:1240px;margin:auto;padding:20px 16px calc(80px + env(safe-area-inset-bottom,0px))}
 .app-header{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;margin-bottom:14px}
 .brand{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
 .brand-mark{width:36px;height:36px;color:var(--accent);flex:none}
@@ -267,13 +267,13 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
 .rec .msg{font-size:13px;color:var(--good);margin:12px 0 0;overflow-wrap:anywhere}
 .rec .msg.bad{color:var(--bad)}
 .page-foot{font-size:12px;line-height:1.7;color:var(--muted);margin-top:22px;text-align:center}
-.jump{position:fixed;z-index:20;left:12px;right:12px;width:calc(100% - 24px);bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;min-height:66px;padding:11px 15px;border:1px solid var(--accent);border-radius:16px;background:var(--accent);color:var(--accent-ink);text-align:left;box-shadow:0 7px 25px rgba(0,0,0,.2)}
-.jump-team{flex:1;min-width:0}
-.jump-lead{display:block;font-size:16px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
-.jump-lead small{font-size:11.5px;font-weight:500;margin-right:7px}
-.jump-backup{display:block;font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jump-cta{font-size:12px;font-weight:650;white-space:nowrap}
-.toast{position:fixed;z-index:40;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:11px 16px;border-radius:12px;background:var(--ink);color:var(--panel);font-size:13px;box-shadow:var(--shadow);pointer-events:none}
+.jump{position:fixed;z-index:20;left:12px;right:12px;width:calc(100% - 24px);bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 11px;border:1px solid var(--accent);border-radius:12px;background:var(--accent);color:var(--accent-ink);text-align:left;box-shadow:0 4px 16px rgba(0,0,0,.16)}
+.jump-team{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px;white-space:nowrap;line-height:1.4}
+.jump-lead{flex:none;font-size:14px;font-weight:750}
+.jump-lead small{font-size:11px;font-weight:500;margin-right:5px}
+.jump-backup{min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.jump-cta{flex:none;font-size:16px;font-weight:650;line-height:1}
+.toast{position:fixed;z-index:40;left:50%;bottom:calc(70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:11px 16px;border-radius:12px;background:var(--ink);color:var(--panel);font-size:13px;box-shadow:var(--shadow);pointer-events:none}
 @media(min-width:700px){.card-main{padding:13px 12px 7px}.who{font-size:21px}.heat{font-size:13px}.heat .c-me{width:136px}.heat thead th{padding:7px 4px;font-size:12px}.heat tbody th[scope=row]{font-size:13px}.heat td{height:44px}}
 @media(min-width:960px){
   .wrap{padding:28px 24px 44px}
@@ -860,8 +860,8 @@ function renderResult(){
   const good = slots.map((_, j) => j).filter(j => r.V[order[0]][j] >= .3).map(opponentName);
   el.innerHTML = `${fail}<div id='decisionCore'><p class='decision-note'>${megaNote}</p><div class='order' id='mainOrder'>${renderCards(order, lp, r.V, 'main')}</div><p class='decision-note'>선봉의 유리한 대면 · ${good.length ? esc(good.join(', ')) : '뚜렷한 상대 없음'} (1:1 기대 상성 +0.30 이상)</p></div>${preciseBlock()}${heatFold(r)}${compare}${calculationHelp(r, c)}`;
   resultReady = true;
-  $('#jump').innerHTML = `<span class='jump-team'><span class='jump-lead'><small>${c ? '정밀 선봉' : '선봉'}</small>${esc(ME[order[0]].n)}</span><span class='jump-backup'>${order.slice(1).map(i => esc(ME[i].n)).join(' · ')}</span></span><span class='jump-cta'>추천 보기 ↓</span>`;
-  $('#jump').setAttribute('aria-label', `추천 보기. 선봉 ${ME[order[0]].n}, 대기 ${order.slice(1).map(i => ME[i].n).join(', ')}`);
+  $('#jump').innerHTML = `<span class='jump-team'><span class='jump-lead'><small>${c ? '정밀 선봉' : '선봉'}</small>${esc(ME[order[0]].n)}</span><span class='jump-backup'>${order.slice(1).map(i => esc(ME[i].n)).join(' · ')}</span></span><span class='jump-cta' aria-hidden='true'>↓</span>`;
+  $('#jump').setAttribute('aria-label', `추천 보기. 선봉 ${ME[order[0]].n}, 함께 선출 ${order.slice(1).map(i => ME[i].n).join(', ')}`);
   watchDecision(); updateJump();
 }
 function queueResult(){
@@ -1220,7 +1220,7 @@ if (colorQuery.addEventListener) colorQuery.addEventListener('change', applyThem
 
 // ── 초기화 ──
 if ('IntersectionObserver' in window){
-  resultObserver = new IntersectionObserver(es => { resVisible = es.some(e => e.isIntersecting); updateJump(); }, {rootMargin:'0px 0px -88px 0px', threshold:.1});
+  resultObserver = new IntersectionObserver(es => { resVisible = es.some(e => e.isIntersecting); updateJump(); }, {rootMargin:'0px 0px -64px 0px', threshold:.1});
 }
 if (DATA){
   const meLink = meFromHash();
