@@ -151,7 +151,9 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
 #h-res{scroll-margin-top:18px}
 #result.is-updating{opacity:.55;pointer-events:none}
 .decision-note{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6}
-.order{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:stretch;margin-bottom:18px}
+.order{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:stretch;margin-bottom:18px}
+.order .lead{grid-column:1/-1}
+.order .lead .who{font-size:clamp(24px,6vw,32px);min-height:0}
 .pick-card{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
 .pick-card.lead{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 3px 0 var(--accent)}
 .card-main{padding:11px 9px 5px;display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
@@ -327,7 +329,7 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
       <div class='section-heading'>
         <div class='section-title'><h2 id='h-opp'>상대 파티</h2><span class='badge num' id='slotCount'>0/6</span><span id='exTag' class='badge example' hidden>예시</span></div>
         <div class='heading-actions'>
-          <button class='btn quiet' id='clear' type='button'>비우기</button>
+          <button class='btn quiet' id='clear' type='button'>다음 경기</button>
           <button class='btn quiet icon' id='share' type='button' aria-label='현재 파티 링크 복사' title='내 파티와 상대 파티 링크 복사'><svg aria-hidden='true' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0M13 17a4 4 0 0 0 6 0l4-4a4 4 0 0 0-6-6l-1 1' transform='translate(0 -1) scale(.95)'/></svg></button>
         </div>
       </div>
@@ -349,13 +351,13 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
       <div class='pool' id='pool' role='group' aria-label='상대 포켓몬 후보'></div>
       <p class='feedback' id='oppMsg' role='status' aria-live='polite'></p>
       <details class='help' id='oppHelp'>
-        <summary>입력 방법·예시·선택한 상대 세트</summary>
+        <summary>입력 방법·예시</summary>
         <div class='help-body'>
           <p>이름이나 타입으로 찾고 누르면 추가·해제합니다. Enter는 첫 후보를 추가합니다. 같은 종의 다른 폼은 기존 칸을 바꿉니다. 목록은 조우 비중 순입니다.</p>
-          <p>메가 가능 칸을 누르면 <b>자동 → 메가 확정 → 메가 아님</b>으로 바뀝니다. 자동의 %는 스톤을 들었을 확률입니다. 메가 확정은 팀에서 한 마리만 지정할 수 있습니다. ×로 칸을 비우며, 키보드는 Tab·Enter·Space를 사용할 수 있습니다.</p>
-          <p>타입 필터는 최대 2개입니다. 메가 형태의 타입도 포함하며, 두 개를 고르면 둘 다 가진 후보만 보입니다. 링크에는 내 파티와 상대의 메가 설정도 담깁니다.</p>
+          <p>메가 후보는 상대 6마리로 자동 추정합니다. ×로 칸을 비울 수 있습니다.</p>
+          <p>타입 필터는 최대 2개입니다. 메가 형태의 타입도 포함하며, 두 개를 고르면 둘 다 가진 후보만 보입니다.</p>
           <button class='btn' id='sample' type='button'>예시 파티 넣기</button>
-          <div id='opponentSets'></div>
+          <div id='opponentSets' hidden></div>
         </div>
       </details>
     </section>
@@ -363,9 +365,9 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
     <section class='result-column' aria-labelledby='h-res'>
       <div class='panel result-panel'>
         <div class='section-heading' id='resultHeading'><h2 id='h-res' tabindex='-1'>추천 3마리</h2><span class='badge accent' id='resultBadge' role='status'>입력 대기</span></div>
-        <div id='result' aria-busy='false'><div class='empty-state'><div class='empty-icon' aria-hidden='true'>3</div><h3>상대를 골라주세요</h3><p>상대 3마리부터 선출과 선봉을 계산합니다.</p></div></div>
+        <div id='result' aria-busy='false'><div class='empty-state'><h3>상대 6마리를 골라주세요</h3></div></div>
       </div>
-      <details class='panel fold record-panel' id='recordPanel'>
+      <details class='panel fold record-panel' id='recordPanel' hidden>
         <summary><span>경기 기록</span><span class='detail-meta' id='recState'>경기 후 작성</span></summary>
         <div class='fold-body rec' id='rec'></div>
       </details>
@@ -389,7 +391,7 @@ code{font:12px/1.6 var(--mono);background:var(--chip);color:var(--ink);border-ra
         <details class='help'>
           <summary>파티·세트 계산 안내</summary>
           <div class='help-body'>
-            <p>내 파티가 3마리 이상이면 바로 다시 계산합니다. 후보는 모델이 찾은 종별 최적 세트이며 싱글 순위 순입니다. 같은 종은 지역·성별 폼을 포함해 한 마리만 넣을 수 있습니다.</p>
+            <p>내 파티와 상대를 6마리씩 고르면 계산합니다. 후보는 모델이 찾은 종별 최적 세트이며 싱글 순위 순입니다. 같은 종은 지역·성별 폼을 포함해 한 마리만 넣을 수 있습니다.</p>
             <p>스톤은 여러 마리가 들어도 됩니다. 둘 이상을 함께 내면 상대 3마리를 보고 유리한 한 마리만 메가진화하는 것으로 계산합니다.</p>
             <p>직접 정한 기술·도구를 쓰려면 <code>python -m champions ui --party 내파티.txt</code>로 보드를 다시 만드세요.</p>
           </div>
@@ -484,21 +486,22 @@ function stoneSets(){
   // 스톤 수 분포: 팀 안 메가 가능 종 수별(pick.py stone_count_dist), 없으면 전체
   const KD = DATA.meta.K || {all: [0.08, 0.16, 0.76]};
   const nC = Math.min(4, slots.filter(s => BY[s.k].pm !== undefined && BY[s.k].mv).length);
+  if (slots.length === 6 && nC === 1){
+    const j = slots.findIndex(s => BY[s.k].pm !== undefined && BY[s.k].mv);
+    return [{p: 1, S: [j]}];
+  }
   const K = Array.isArray(KD) ? KD : (KD[String(nC)] || KD.all);
-  const fm = slots.map(s => s.mode === "mega" && BY[s.k].pm !== undefined && !!BY[s.k].mv);
-  const anyF = fm.some(x => x);
-  const pm = slots.map((s, j) => { const o = BY[s.k]; if (o.pm === undefined || !o.mv || s.mode === "base") return 0; if (anyF && !fm[j]) return 0; return fm[j] ? 1 : o.pm; });
+  const pm = slots.map(s => { const o = BY[s.k]; return o.pm === undefined || !o.mv ? 0 : o.pm; });
   const cand = []; pm.forEach((p, j) => { if (p > 0) cand.push(j); });
-  const must = cand.filter(j => fm[j]);
   const odds = j => { const q = Math.min(pm[j], 0.97); return q / (1 - q); };
   const out = [];
   K.forEach((pk, k) => {
     if (pk <= 0 || k > cand.length) return;
-    const subs = combos(cand.length, k).map(c => c.map(i => cand[i])).filter(S => must.every(j => S.includes(j)));
+    const subs = combos(cand.length, k).map(c => c.map(i => cand[i]));
     const ws = subs.map(S => S.reduce((a, j) => a * odds(j), 1)), t = ws.reduce((a, b) => a + b, 0);
     if (t > 0) subs.forEach((S, i) => { if (ws[i] > 0) out.push({p: pk * ws[i] / t, S}); });
   });
-  if (!out.length) return [{p: 1, S: must}];
+  if (!out.length) return [{p: 1, S: []}];
   const t = out.reduce((a, s) => a + s.p, 0);
   const kept = out.map(s => ({p: s.p / t, S: s.S})).filter(s => s.p > 1e-4);
   const t2 = kept.reduce((a, s) => a + s.p, 0);           // 버린 뒤 다시 정규화
@@ -551,7 +554,7 @@ function analyze(){
   }));
   // 스톤 조합별 선출 행렬(pick.py 와 같다): 상대는 스톤 든 포켓몬을 3마리 중 한 마리만 낸다 —
   // 스톤 든 둘을 모두 포함한 조합은 상대가 고르지 않는 수(EXCLUDED). 그런 조합밖에 없으면 나에게 더 불리한 쪽만 메가.
-  const EXCLUDED = DATA.meta.excl || 9, ONE_STONE = DATA.meta.oneStone !== false;
+  const EXCLUDED = DATA.meta.excl || 9, ONE_STONE = DATA.meta.oneStone === true;
   const scenPs = rep => {
     const Pc = {base: pickM(baseV(rep))};
     sc.forEach(s => s.S.forEach(c => { if (!(c in Pc)) Pc[c] = pickM(megaV(c, rep)); }));
@@ -685,14 +688,14 @@ function modeText(s, pm){
 function renderSlots(){
   const active = document.activeElement;
   const oldFocus = $('#slots').contains(active) ? (active.dataset.rm !== undefined ? {remove:+active.dataset.rm} : {slot:+(active.dataset.slot ?? active.dataset.empty)}) : null;
-  const p = megaProbs();
   let h = '';
   for (let j = 0; j < 6; j++){
     const s = slots[j];
     if (!s){ h += `<div class='slot empty'><button class='slot-main' type='button' data-empty='${j}' aria-label='상대 ${j + 1}번 칸, 검색으로 추가'><span class='slot-number num'>${j + 1}</span><small>추가</small></button></div>`; continue; }
-    const o = BY[s.k], nm = s.mode === 'mega' && o.mn ? o.mn : o.n;
-    const next = o.pm === undefined ? '예상 세트 보기' : `누르면 ${s.mode === 'auto' ? '메가 확정' : s.mode === 'mega' ? '메가 아님' : '자동'}으로 변경`;
-    h += `<div class='slot${s.mode === 'mega' ? ' mega' : ''}'><button class='slot-main' type='button' data-slot='${j}' title='${esc(o.set)}' aria-label='${esc(nm + ', ' + modeText(s, p[j]) + '. ' + next)}'><span class='slot-name'><span class='slot-types'>${dots(s.mode === 'mega' && o.mt ? o.mt : o.t)}</span>${esc(nm)}</span><span class='slot-mode${s.mode === 'mega' ? ' known' : ''}'>${esc(modeText(s, p[j]))}</span></button><button class='slot-remove' type='button' data-rm='${j}' aria-label='${esc(o.n)} 빼기'>×</button></div>`;
+    const o = BY[s.k];
+    const candidates = slots.filter(x => BY[x.k].pm !== undefined && BY[x.k].mv);
+    const label = slots.length === 6 && candidates.length === 1 && candidates[0] === s ? '메가 예상 · 유일 후보' : '';
+    h += `<div class='slot${label ? ' mega' : ''}'><div class='slot-main'><span class='slot-name'><span class='slot-types'>${dots(o.t)}</span>${esc(o.n)}</span><span class='slot-mode known'>${label}</span></div><button class='slot-remove' type='button' data-rm='${j}' aria-label='${esc(o.n)} 빼기'>×</button></div>`;
   }
   $('#slots').innerHTML = h;
   $('#slotCount').textContent = `${slots.length}/6`;
@@ -703,7 +706,7 @@ function renderSlots(){
     (target || $(`#slots [data-slot='${Math.max(0, slots.length - 1)}']`) || $(`#slots [data-empty='${j}']`))?.focus({preventScroll:true});
   }
 }
-function opponentName(j){ const s = slots[j], o = BY[s.k]; return s.mode === 'mega' && o.mn ? o.mn : o.n; }
+function opponentName(j){ return BY[slots[j].k].n; }
 function renderTypes(){
   const focused = document.activeElement?.dataset.t;
   $('#types').innerHTML = TYPE_ORDER.filter(t => TYPES.n[t]).map(t => `<button class='ty' type='button' data-t='${t}' aria-pressed='${typeSel.includes(t)}'><span class='dot' aria-hidden='true' style='background:${esc(TYPES.c[t])}'></span>${esc(TYPES.n[t])}</button>`).join('') + (typeSel.length ? `<button class='ty reset' type='button' data-t=''>필터 해제</button>` : '');
@@ -746,7 +749,7 @@ function renderCards(order, lp, V, prefix){
   return order.map((i, k) => {
     const b = ME[i], good = slots.map((_, j) => j).filter(j => V[i][j] >= .3).map(opponentName);
     const key = `${prefix}-set-${b.ri}`, open = foldState[key];
-    return `<article class='pick-card${k === 0 ? ' lead' : ''}' aria-label='${k === 0 ? '선봉' : '대기 ' + k}, ${esc(b.n)}'><div class='card-main'><p class='card-role'><span>${k === 0 ? '선봉' : '대기'}</span><span class='num' aria-hidden='true'>0${k + 1}</span></p><h3 class='who'>${esc(b.n)}</h3><p class='card-item'>${esc(b.item)}</p><p class='lead-rate'><span>선봉</span><b class='num'>${Math.round((lp[i] || 0) * 100)}%</b></p></div><details class='card-extra' data-fold='${key}'${open ? ' open' : ''}><summary>기술·상성<span class='sr-only'> · ${esc(b.n)}</span></summary><div class='card-extra-body'><p class='muted'>${esc(b.a)}${b.c ? ' · 마무리' : ''}</p><p class='favourable'>유리: ${good.length ? esc(good.join(', ')) : '뚜렷한 상대 없음'}<span class='stl'>1:1 기대 상성 +0.30 이상</span></p>${statSpans(b)}<ul class='moves'>${b.mv.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div></details></article>`;
+    return `<article class='pick-card${k === 0 ? ' lead' : ''}' aria-label='${k === 0 ? '선봉' : '함께 선출'}, ${esc(b.n)}'><div class='card-main'><p class='card-role'>${k === 0 ? '먼저 내보낼 선봉' : '함께 선출'}</p><h3 class='who'>${esc(b.n)}</h3></div><details class='card-extra' data-fold='${key}'${open ? ' open' : ''}><summary>기술·상성<span class='sr-only'> · ${esc(b.n)}</span></summary><div class='card-extra-body'><p class='muted'>${esc(b.item)} · ${esc(b.a)}${b.c ? ' · 마무리' : ''}</p><p class='favourable'>유리: ${good.length ? esc(good.join(', ')) : '뚜렷한 상대 없음'}<span class='stl'>1:1 기대 상성 +0.30 이상</span></p>${statSpans(b)}<ul class='moves'>${b.mv.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div></details></article>`;
   }).join('');
 }
 function quickResponses(r, order = r.pos){
@@ -832,10 +835,10 @@ function renderResult(){
   const el = $('#result');
   captureFolds(el); LASTPOS = []; resultReady = false;
   el.classList.remove('is-updating'); el.setAttribute('aria-busy', 'false');
-  if (ME.length < 3 || slots.length < 3){
-    const mine = ME.length < 3;
+  if (ME.length < 6 || slots.length < 6){
+    const mine = ME.length < 6;
     $('#resultBadge').textContent = '입력 대기';
-    el.innerHTML = `<div class='empty-state'><div class='empty-icon num' aria-hidden='true'>${mine ? ME.length : slots.length}/3</div><h3>${mine ? '내 파티를 3마리 이상 골라주세요' : '상대를 3마리 이상 골라주세요'}</h3><p>3마리부터 바로 계산합니다. 상대 파티는 최대 6마리까지 입력할 수 있습니다.</p><button class='btn primary' type='button' data-focus='${mine ? 'me' : 'opp'}'>${mine ? '내 파티 편집' : '상대 고르기'}</button></div>${preciseBlock()}`;
+    el.innerHTML = `<div class='empty-state'><div class='empty-icon num' aria-hidden='true'>${mine ? ME.length : slots.length}/6</div><h3>${mine ? '내 파티 6마리를 골라주세요' : '상대 6마리를 골라주세요'}</h3><p>${mine ? '경기 전에 내 파티를 준비합니다.' : `상대 ${6 - slots.length}마리를 더 고르면 추천합니다.`}</p><button class='btn primary' type='button' data-focus='${mine ? 'me' : 'opp'}'>${mine ? '내 파티 편집' : '상대 고르기'}</button></div>`;
     watchDecision(); updateJump(); return;
   }
   let r;
@@ -849,11 +852,13 @@ function renderResult(){
   const cached = SERVER && PCACHE[preciseSig()], c = cached && cached.res ? cached : null;
   const order = c ? [c.pick.lead, ...c.pick.t.filter(i => i !== c.pick.lead)] : r.pos;
   const lp = c ? Object.fromEntries(ME.map((_, i) => [i, c.res.mix.length ? c.res.mix.reduce((a, x) => a + (x.lead === i ? x.p : 0), 0) : (i === c.res.safe.lead ? 1 : 0)])) : r.lp;
-  const rows = activeResponses(r, c);
   const fail = r.fails ? `<div class='warn' role='alert'><b>빠른 계산 경고</b> · 행렬 게임 ${r.fails}개를 풀지 못해 순수 최대최소 수로 대신했습니다. 혼합·선봉 비율은 균형이 아닐 수 있습니다.</div>` : '';
-  const compare = c ? fold('quick-reference', '빠른 계산 비교', '1:1 상성 기반', `<p class='hint'>정밀 계산과 별개인 빠른 추천입니다. 위 주 추천은 정밀 결과를 사용합니다.</p><div class='order'>${renderCards(r.pos, r.lp, r.V, 'compare')}</div>${scoreBlock(r.safe, r.v, false)}${responseFold(quickResponses(r), false, 'compare-')}${mixFold(r, false, 'compare-')}${theirFold(r, false, 'compare-')}`) : '';
+  const compare = c ? fold('quick-reference', '빠른 계산 비교', '1:1 상성 기반', `<div class='order'>${renderCards(r.pos, r.lp, r.V, 'compare')}</div>`) : '';
   $('#resultBadge').textContent = c ? '정밀 · 이번 판' : '빠른 계산';
-  el.innerHTML = `${fail}<div id='decisionCore'><p class='decision-note'>${c ? `균형 비율 ${Math.round(c.pick.p * 100)}%에서 뽑은 이번 판의 수` : `한 조합만 낸다면 · 상대 ${slots.length}/6 입력`}</p><div class='order' id='mainOrder'>${renderCards(order, lp, r.V, 'main')}</div>${responseOverview(rows, !!c)}</div>${scoreBlock(c ? c.res.safe.v : r.safe, c ? c.res.value : r.v, !!c)}${preciseBlock()}${responseFold(rows, !!c)}${mixFold(c ? c.res : r, !!c)}${theirFold(c ? c.res : r, !!c)}${heatFold(r)}${compare}${calculationHelp(r, c)}`;
+  const candidates = slots.filter(s => BY[s.k].pm !== undefined && BY[s.k].mv);
+  const megaNote = candidates.length === 1 ? `메가 예상 · ${esc(BY[candidates[0].k].n)} (유일 후보)` : candidates.length ? '메가 후보가 여러 마리여서 가능한 경우를 반영했습니다.' : '메가 후보 없음';
+  const good = slots.map((_, j) => j).filter(j => r.V[order[0]][j] >= .3).map(opponentName);
+  el.innerHTML = `${fail}<div id='decisionCore'><p class='decision-note'>${megaNote}</p><div class='order' id='mainOrder'>${renderCards(order, lp, r.V, 'main')}</div><p class='decision-note'>선봉의 유리한 대면 · ${good.length ? esc(good.join(', ')) : '뚜렷한 상대 없음'} (1:1 기대 상성 +0.30 이상)</p></div>${preciseBlock()}${heatFold(r)}${compare}${calculationHelp(r, c)}`;
   resultReady = true;
   $('#jump').innerHTML = `<span class='jump-team'><span class='jump-lead'><small>${c ? '정밀 선봉' : '선봉'}</small>${esc(ME[order[0]].n)}</span><span class='jump-backup'>${order.slice(1).map(i => esc(ME[i].n)).join(' · ')}</span></span><span class='jump-cta'>추천 보기 ↓</span>`;
   $('#jump').setAttribute('aria-label', `추천 보기. 선봉 ${ME[order[0]].n}, 대기 ${order.slice(1).map(i => ME[i].n).join(', ')}`);
@@ -862,6 +867,7 @@ function renderResult(){
 function queueResult(){
   clearTimeout(resultTimer); resultPending = true;
   if (!analysisCache || analysisCache.sig !== preciseSig()) LASTPOS = [];
+  if (ME.length < 6 || slots.length < 6) { resultPending = false; renderResult(); renderRecord(); return; }
   $('#result').setAttribute('aria-busy', 'true'); $('#result').classList.add('is-updating');
   $('#resultBadge').textContent = '계산 중'; updateJump();
   resultTimer = setTimeout(() => { resultPending = false; renderResult(); renderRecord(); updateJump(); }, 0);
@@ -952,12 +958,10 @@ function meFromHash(){
   try { const out = meFromIds(m[1].split(',').map(decodeURIComponent)); return out.length || !m[1] ? out : null; } catch (e){ return null; }
 }
 function cleanSlots(raw){
-  const out = []; let seen = false;
+  const out = [];
   for (const x of raw){
     if (!x || !BY[x.k] || out.some(s => BY[s.k].spc === BY[x.k].spc) || out.length >= 6) continue;
-    let mode = ['auto','mega','base'].includes(x.mode) ? x.mode : 'auto';
-    if (mode === 'mega'){ if (seen || BY[x.k].pm === undefined) mode = 'auto'; else seen = true; }
-    out.push({k:x.k, mode});
+    out.push({k:x.k, mode:'auto'});
   }
   return out;
 }
@@ -1152,12 +1156,6 @@ $('#slots').addEventListener('click', e => {
   if (rm){ slots.splice(+rm.dataset.rm, 1); $('#oppMsg').textContent = ''; $('#exTag').hidden = true; render(); return; }
   const empty = e.target.closest('[data-empty]');
   if (empty){ $('#q').focus(); return; }
-  const b = e.target.closest('[data-slot]'); if (!b) return;
-  const j = +b.dataset.slot, sl = slots[j];
-  if (BY[sl.k].pm === undefined){ $('#oppHelp').open = true; scrollToEl($(`#oppSet${j}`)); return; }
-  sl.mode = {auto:'mega', mega:'base', base:'auto'}[sl.mode];
-  if (sl.mode === 'mega') slots.forEach(o => { if (o !== sl && o.mode === 'mega') o.mode = 'auto'; });
-  $('#exTag').hidden = true; render();
 });
 // 실제 button을 사용하므로 Enter·Space는 브라우저의 기본 키보드 동작을 따른다.
 $('#q').addEventListener('input', () => { clearTimeout(oppSearchTimer); oppSearchTimer = setTimeout(renderPool, 70); });
@@ -1174,7 +1172,7 @@ $('#types').addEventListener('click', e => {
   else typeSel = [...typeSel, t].slice(-2);
   clearTimeout(oppSearchTimer); renderTypes(); renderPool();
 });
-$('#clear').addEventListener('click', () => { slots = []; $('#exTag').hidden = true; $('#oppMsg').textContent = ''; render(); });
+$('#clear').addEventListener('click', () => { slots = []; $('#exTag').hidden = true; $('#oppMsg').textContent = ''; $('#q').value = ''; typeSel = []; renderTypes(); renderPool(); render(); $('#q').focus(); });
 function sample(){
   const seen = new Set(); slots = [];
   for (const o of OPPS){ if (seen.has(o.spc)) continue; seen.add(o.spc); slots.push({k:o.k, mode:'auto'}); if (slots.length === 6) break; }
@@ -1235,7 +1233,7 @@ if (DATA){
   else try { const s = JSON.parse(localStorage.getItem(STORE) || 'null'); if (Array.isArray(s)){ slots = cleanSlots(s); restored = true; } } catch (e) {}
   renderPool();
   // 初回だけ明示的な「例示」表示。空にした保存状態は再読み込みしても尊重する。
-  if (!restored) sample(); else render();
+  render();
   if (SERVER && SERVER.rec) fetch(SERVER.api + '/status').then(r => r.json()).then(j => { recServerN = j.records; renderRecord(); }).catch(() => {});
 } else {
   $('#warn').hidden = false;
